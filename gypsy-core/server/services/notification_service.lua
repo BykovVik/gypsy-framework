@@ -14,7 +14,17 @@ NotificationService = {
         type = type or 'info'
         duration = duration or 3000
         
-        -- Пробуем использовать gypsy-hud
+        -- Пробуем использовать gypsy-notifications (приоритет)
+        if GetResourceState('gypsy-notifications') == 'started' then
+            TriggerClientEvent('gypsy-notifications:client:notify', source, {
+                message = message,
+                type = type,
+                duration = duration
+            })
+            return true
+        end
+        
+        -- Fallback: gypsy-hud (для обратной совместимости)
         if GetResourceState('gypsy-hud') == 'started' then
             TriggerClientEvent('gypsy-hud:client:notify', source, {
                 message = message,
@@ -23,6 +33,29 @@ NotificationService = {
             })
             return true
         end
+        
+        -- Пробуем ox_lib
+        if GetResourceState('ox_lib') == 'started' then
+            TriggerClientEvent('ox_lib:notify', source, {
+                type = type,
+                description = message,
+                duration = duration
+            })
+            return true
+        end
+        
+        -- Fallback: chat
+        local color = '^0'
+        if type == 'success' then color = '^2'
+        elseif type == 'error' then color = '^1'
+        elseif type == 'warning' then color = '^3'
+        end
+        
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {'System', color .. message .. '^0'}
+        })
+        return true
+    end,
         
         -- Пробуем ox_lib
         if GetResourceState('ox_lib') == 'started' then

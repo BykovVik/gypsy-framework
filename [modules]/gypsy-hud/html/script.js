@@ -3,46 +3,92 @@ window.addEventListener('message', function (event) {
         setProgress('health-fill', event.data.health);
         setProgress('armor-fill', event.data.armor);
         setProgress('stamina-fill', event.data.stamina);
+        setProgress('microphone', event.data.microphone || 0);
     } else if (event.data.action === "updateStatus") {
         setProgress('hunger-fill', event.data.hunger);
         setProgress('thirst-fill', event.data.thirst);
     } else if (event.data.action === "updateVehicle") {
-        // Show Vehicle HUD
+        // Show Vehicle HUD and Minimap Border
         document.getElementById('vehicle-hud').style.display = 'flex';
         document.getElementById('minimap-border').style.display = 'block';
-        
+
+        // Show radar via Lua callback
+        fetch(`https://${GetParentResourceName()}/showRadar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
         // Update Values
-        document.getElementById('speed').innerText = Math.floor(event.data.speed);
+        let speed = Math.floor(event.data.speed);
+        document.getElementById('speed').innerText = speed;
+
+        // Update Speedometer Gauge (Max Speed 200)
+        let maxSpeed = 200;
+        let speedPercent = (speed / maxSpeed) * 100;
+        // Clamp to 100%
+        speedPercent = Math.min(100, Math.max(0, speedPercent));
+
+        // Update the big gauge
+        setProgress('speed-fill', speedPercent);
+
         setProgress('fuel-fill', event.data.fuel);
-        
+
         // Engine Health (0-1000) -> Percent (0-100)
         let enginePercent = (event.data.engine / 1000) * 100;
         setProgress('engine-fill', enginePercent);
-        
+
         // Optional: Change engine color based on health
         const engineCircle = document.querySelector('#engine-fill');
         if (event.data.engine < 300) {
-            engineCircle.style.stroke = '#ff4444'; // Red
+            engineCircle.style.stroke = '#a53131ff'; // Red
         } else if (event.data.engine < 600) {
-            engineCircle.style.stroke = '#ffaa00'; // Orange
+            engineCircle.style.stroke = '#d4d4d4ff'; // Orange
         } else {
-            engineCircle.style.stroke = '#4caf50'; // Green
+            engineCircle.style.stroke = '#c7c7c7ff'; // Green
         }
 
     } else if (event.data.action === "hideVehicle") {
         document.getElementById('vehicle-hud').style.display = 'none';
         document.getElementById('minimap-border').style.display = 'none';
+
+        // Hide radar via Lua callback
+        fetch(`https://${GetParentResourceName()}/hideRadar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
     } else if (event.data.action === "hide") {
         document.getElementById('hud-container').style.display = 'none';
     } else if (event.data.action === "show") {
         document.getElementById('hud-container').style.display = 'block';
+    } else if (event.data.action === "updateTime") {
+        const minimapBorder = document.getElementById('minimap-border');
+        const speedGauge = document.getElementById('speed-fill');
+
+        if (event.data.isNight) {
+            minimapBorder.classList.add('neon-border');
+            if (speedGauge) {
+                speedGauge.classList.add('neon-speed');
+            }
+        } else {
+            minimapBorder.classList.remove('neon-border');
+            if (speedGauge) {
+                speedGauge.classList.remove('neon-speed');
+            }
+        }
     }
 });
+
+// Helper function to get parent resource name
+function GetParentResourceName() {
+    return 'gypsy-hud';
+}
 
 function setProgress(elementId, percent) {
     const circle = document.getElementById(elementId);
     if (!circle) return;
-    
+
     const radius = circle.r.baseVal.value;
     const circumference = radius * 2 * Math.PI;
 

@@ -12,7 +12,7 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
-    'html/background.jpg'
+    'html/loading.png'
 }
 
 client_script 'client.lua'

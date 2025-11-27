@@ -40,38 +40,55 @@
                     <circle cx="32" cy="32" r="28" id="thirst-fill"></circle>
                 </svg>
             </div>
-            <div class="status-circle armor">
-                <img src="./icon/Microphone.svg" alt="Armor" />
+            <div class="status-circle microphone">
+                <img src="./icon/Microphone.svg" alt="microphone" />
                 <svg viewBox="0 0 64 64">
                     <circle cx="32" cy="32" r="28"></circle>
-                    <circle cx="32" cy="32" r="28" id="armor-fill"></circle>
+                    <circle cx="32" cy="32" r="28" id="microphone"></circle>
                 </svg>
             </div>
         </div>
 
-        <!-- Minimap Border (Bottom Left) -->
-        <div class="minimap-border" id="minimap-border"></div>
-
         <!-- Vehicle HUD (Bottom Left, next to Minimap) -->
         <div class="vehicle-hud" id="vehicle-hud" style="display: none;">
-            <div class="speedometer">
-                <span id="speed">0</span>
-                <span class="unit">MPH</span>
-            </div>
-            <div class="vehicle-stats">
-                <div class="status-circle fuel">
-                    <img src="./icon/Fuel.svg" alt="Fuel" />
-                    <svg viewBox="0 0 64 64">
-                        <circle cx="32" cy="32" r="28"></circle>
-                        <circle cx="32" cy="32" r="28" id="fuel-fill"></circle>
-                    </svg>
-                </div>
-                <div class="status-circle engine">
-                    <img src="./icon/Icon.svg" alt="Engine" />
-                    <svg viewBox="0 0 64 64">
-                        <circle cx="32" cy="32" r="28"></circle>
-                        <circle cx="32" cy="32" r="28" id="engine-fill"></circle>
-                    </svg>
+            <div class="vehicle-hud-container">
+                <div class="minimap-border" id="minimap-border"></div>
+
+                <!-- Circular Speedometer -->
+                <div class="speedometer-cluster">
+                    <div class="speed-gauge-wrapper">
+                        <!-- Speedometer Background Image -->
+                        <img src="./icon/Speed.svg" alt="Speedometer" class="speed-bg-img" />
+
+                        <svg class="speed-gauge" viewBox="0 0 120 120">
+                            <!-- Background Track -->
+                            <circle class="gauge-bg" cx="60" cy="60" r="54" />
+                            <!-- Progress Fill -->
+                            <circle class="gauge-fill" cx="60" cy="60" r="54" id="speed-fill" />
+                        </svg>
+                        <div class="speed-text-container">
+                            <span id="speed">0</span>
+                            <span class="unit">MPH</span>
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Stats (Fuel & Engine)-->
+                    <div class="vehicle-stats-cluster">
+                        <div class="status-circle fuel">
+                            <img src="./icon/Fuel.svg" alt="Fuel" />
+                            <svg viewBox="0 0 64 64">
+                                <circle cx="32" cy="32" r="28"></circle>
+                                <circle cx="32" cy="32" r="28" id="fuel-fill"></circle>
+                            </svg>
+                        </div>
+                        <div class="status-circle engine">
+                            <img src="./icon/Dviglo.svg" alt="Engine" />
+                            <svg viewBox="0 0 64 64">
+                                <circle cx="32" cy="32" r="30"></circle>
+                                <circle cx="32" cy="32" r="30" id="engine-fill"></circle>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

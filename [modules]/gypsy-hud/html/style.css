@@ -69,10 +69,6 @@ body {
     stroke: #f36b15;
 }
 
-.armor circle:nth-child(2) {
-    stroke: #4488ff;
-}
-
 .hunger circle:nth-child(2) {
     stroke: #fbcb4f;
 }
@@ -85,58 +81,189 @@ body {
     stroke: #75bfcc;
 }
 
+.microphone circle:nth-child(2) {
+    stroke: #969696;
+}
+
 .fuel circle:nth-child(2) {
-    stroke: #ffcc00;
+    stroke: #ce46bc;
 }
 
 .engine circle:nth-child(2) {
-    stroke: #4caf50;
+    stroke: #5c5c5c;
 }
 
-/* Minimap Border */
-.minimap-border {
-    position: absolute;
-    bottom: 18px;
-    left: 18px;
-    width: 290px;
-    height: 165px;
-    border: 2px solid rgba(255, 255, 255, 0.6);
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-    z-index: 900;
-    display: none;
-}
+/* =========================================
+   Vehicle HUD Styles
+   ========================================= */
 
-/* Vehicle HUD */
+/* Main Container */
 .vehicle-hud {
     position: absolute;
     bottom: 20px;
     left: 320px;
-    /* Right of minimap */
+    /* Positioned to the right of the minimap */
+    display: flex;
+    align-items: flex-end;
+    z-index: 1000;
+}
+
+.vehicle-hud-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Minimap Border */
+.minimap-border {
+    position: fixed;
+    /* Fixed to screen bottom-left */
+    bottom: 30px;
+    left: 20px;
+    width: 275px;
+    height: 170px;
+    border: 6px solid rgba(255, 255, 255, 0.6);
+    border-radius: 5px;
+    display: none;
+    /* Hidden by default */
+    z-index: 900;
+    box-shadow:
+        0 0 20px rgba(216, 216, 216, 0.4),
+        0 0 40px rgba(77, 77, 77, 0.3),
+        inset 0 0 80px rgba(0, 0, 0, 0.7);
+    transition: box-shadow 0.5s ease, border-color 0.5s ease;
+}
+
+/* Neon Glow Effect */
+.neon-border {
+    border-color: #fbcb4f;
+    /* Purple Neon */
+    box-shadow:
+        0 0 20px rgba(255, 176, 0, 0.4),
+        0 0 40px rgba(255, 102, 0, 0.3),
+        inset 0 0 80px rgba(0, 0, 0, 0.7);
+    transition: box-shadow 0.5s ease, border-color 0.5s ease;
+}
+
+/* Speedometer Cluster */
+.speedometer-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Speed Gauge Wrapper */
+.speed-gauge-wrapper {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Speedometer Background Image */
+.speed-bg-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    /* Behind the gauge */
+    opacity: 0.8;
+    /* Slight transparency to blend */
+}
+
+/* SVG Gauge */
+.speed-gauge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(135deg);
+    /* Start from bottom-left */
+    z-index: 2;
+    /* On top of the image */
+}
+
+.speed-gauge circle {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+}
+
+.gauge-bg {
+    stroke: rgba(0, 0, 0, 0.5);
+}
+
+.gauge-fill {
+    stroke: #fff;
+    /* White progress by default */
+    stroke-dasharray: 339.29;
+    /* 2 * PI * 54 */
+    stroke-dashoffset: 339.29;
+    /* Start empty */
+    transition: stroke-dashoffset 0.3s ease, stroke 0.5s ease;
+}
+
+/* Red color for Night Time */
+.gauge-fill.neon-speed {
+    stroke: #ff3333;
+}
+
+/* Speed Text */
+.speed-text-container {
+    position: absolute;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    z-index: 3;
+    /* On top of everything */
 }
 
-.speedometer {
+#speed {
     font-family: 'Arial', sans-serif;
-    color: white;
-    text-shadow: 2px 2px 4px black;
+    font-size: 42px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
 }
 
-.speedometer #speed {
-    font-size: 48px;
-    font-weight: bold;
+.unit {
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 2px;
 }
 
-.speedometer .unit {
-    font-size: 24px;
-    margin-left: 5px;
-    color: #ccc;
-}
-
-.vehicle-stats {
+/* Vehicle Stats Cluster (Fuel & Engine) */
+.vehicle-stats-cluster {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Adjust size for vehicle stat circles */
+.vehicle-stats-cluster .status-circle {
+    width: 48px;
+    height: 48px;
+}
+
+.vehicle-stats-cluster .status-circle img {
+    width: 48px;
+    height: 48px;
+}
+
+.vehicle-stats-cluster .status-circle svg {
+    width: 48px;
+    height: 48px;
+}
+
+.vehicle-stats-cluster .status-circle circle {
+    stroke-width: 4;
 }

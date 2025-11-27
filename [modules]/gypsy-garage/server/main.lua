@@ -65,24 +65,9 @@ CreateThread(function()
     print('^2[Garage] Service registered in ServiceLocator^0')
 end)
 
--- Initialize DB
-CreateThread(function()
-    exports.oxmysql:execute([[
-        CREATE TABLE IF NOT EXISTS `gypsy_vehicles` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `citizenid` varchar(50) DEFAULT NULL,
-            `vehicle` varchar(50) DEFAULT NULL,
-            `hash` varchar(50) DEFAULT NULL,
-            `mods` longtext DEFAULT NULL,
-            `plate` varchar(15) NOT NULL,
-            `garage` varchar(50) DEFAULT 'legion',
-            `state` int(11) DEFAULT 1,
-            PRIMARY KEY (`id`),
-            KEY `plate` (`plate`),
-            KEY `citizenid` (`citizenid`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]])
-end)
+-- Database schema is managed by gypsy-core/setup_database.sql
+-- No need to create tables here
+
 
 -- Get Player Vehicles
 RegisterNetEvent('gypsy-garage:server:getMyVehicles', function(garage)
@@ -110,8 +95,8 @@ RegisterNetEvent('gypsy-garage:server:getMyVehicles', function(garage)
         local citizenid = playerResult[1].citizenid
         
         
-        -- Now get their vehicles
-        exports.oxmysql:execute('SELECT * FROM gypsy_vehicles WHERE citizenid = ? AND garage = ?', {citizenid, garage}, function(result)
+        -- Now get their vehicles (show all vehicles, not filtered by garage)
+        exports.oxmysql:execute('SELECT * FROM gypsy_vehicles WHERE citizenid = ?', {citizenid}, function(result)
             
             TriggerClientEvent('gypsy-garage:client:openMenu', src, result)
         end)
@@ -211,8 +196,8 @@ RegisterNetEvent('gypsy-garage:server:parkVehicle', function(plate, mods)
                 local model = 'unknown'
                 if mods.model then model = tostring(mods.model) end
                 
-                exports.oxmysql:execute('INSERT INTO gypsy_vehicles (citizenid, vehicle, hash, mods, plate, state) VALUES (?, ?, ?, ?, ?, ?)', {
-                    citizenid, model, model, json.encode(mods), plate, 1
+                exports.oxmysql:execute('INSERT INTO gypsy_vehicles (citizenid, vehicle, mods, plate, state) VALUES (?, ?, ?, ?, ?)', {
+                    citizenid, model, json.encode(mods), plate, 1
                 }, function(id)
                     if id then
                         TriggerClientEvent('gypsy-garage:client:parkSuccess', src)

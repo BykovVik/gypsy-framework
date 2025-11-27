@@ -25,6 +25,17 @@ RegisterNetEvent('gypsy-appearance:client:start', function(data)
     AppearanceState.gender = data.gender or 0
     AppearanceState.savedCoords = GetEntityCoords(PlayerPedId())
     
+    -- Emit event via EventBus to hide HUD
+    local Gypsy = exports['gypsy-core']:GetCoreObject()
+    if Gypsy and Gypsy.EventBus then
+        Gypsy.EventBus:Emit('appearance:editor:opened')
+        print('[APPEARANCE] Emitted appearance:editor:opened via EventBus')
+    else
+        -- Fallback to direct event
+        TriggerEvent('gypsy-hud:client:hideForEditor')
+        print('[APPEARANCE] Triggered fallback hide event')
+    end
+    
     -- Fade out
     DoScreenFadeOut(500)
     Wait(500)
@@ -237,6 +248,17 @@ end)
 
 function CleanupAppearanceEditor()
     AppearanceState.active = false
+    
+    -- Emit event via EventBus to show HUD again
+    local Gypsy = exports['gypsy-core']:GetCoreObject()
+    if Gypsy and Gypsy.EventBus then
+        Gypsy.EventBus:Emit('appearance:editor:closed')
+        print('[APPEARANCE] Emitted appearance:editor:closed via EventBus')
+    else
+        -- Fallback to direct event
+        TriggerEvent('gypsy-hud:client:showAfterEditor')
+        print('[APPEARANCE] Triggered fallback show event')
+    end
     
     -- Close NUI
     SetNuiFocus(false, false)

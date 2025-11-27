@@ -119,11 +119,17 @@ local function GetFuelConsumption(vehicle)
 end
 
 CreateThread(function()
+    local lastSpeed = 0.0
+    local lastCollisionTime = 0
+    
     while true do
         local ped = PlayerPedId()
         if IsPedInAnyVehicle(ped, false) then
             local vehicle = GetVehiclePedIsIn(ped, false)
             if GetPedInVehicleSeat(vehicle, -1) == ped then -- Driver only
+                
+                -- Store current speed for collision detection
+                local currentSpeed = GetEntitySpeed(vehicle) * 2.236936 -- MPH
                 
                 -- 1. Fuel Logic
                 if GetIsVehicleEngineRunning(vehicle) then
@@ -141,9 +147,46 @@ CreateThread(function()
                     end
                 end
                 
-                -- 2. Damage Logic
+                -- 2. Collision-Based Engine Damage
                 local engineHealth = GetVehicleEngineHealth(vehicle)
+                local currentTime = GetGameTimer()
                 
+                -- Detect collisions (with cooldown to prevent multiple hits)
+                if HasEntityCollidedWithAnything(vehicle) and (currentTime - lastCollisionTime) > 500 then
+                    local impactSpeed = lastSpeed -- Use speed from BEFORE collision
+                    local damage = 0.0
+                    
+                    -- Calculate damage based on impact speed (lowered thresholds)
+                    if impactSpeed > 70 then
+                        damage = 200.0 -- Severe collision
+                    elseif impactSpeed > 45 then
+                        damage = 100.0 -- Heavy collision
+                    elseif impactSpeed > 25 then
+                        damage = 50.0 -- Moderate collision
+                    elseif impactSpeed > 10 then
+                        damage = 20.0 -- Light collision
+                    end
+                    
+                    -- Apply damage
+                    if damage > 0 then
+                        local newHealth = engineHealth - damage
+                        if newHealth < 0 then newHealth = 0 end
+                        SetVehicleEngineHealth(vehicle, newHealth)
+                        lastCollisionTime = currentTime
+                        
+                        -- Notify player
+                        if damage >= 100 then
+                            TriggerEvent('chat:addMessage', {args = {'^1Vehicle', string.format('Severe engine damage! (%.0f MPH impact)', impactSpeed)}})
+                        elseif damage >= 50 then
+                            TriggerEvent('chat:addMessage', {args = {'^3Vehicle', string.format('Engine damaged! (%.0f MPH impact)', impactSpeed)}})
+                        end
+                    end
+                end
+                
+                -- Update last speed for next iteration
+                lastSpeed = currentSpeed
+                
+                -- 3. Damage Effects
                 if engineHealth < 100 then
                     SetVehicleEngineOn(vehicle, false, true, true)
                 elseif engineHealth < 300 then
@@ -154,7 +197,7 @@ CreateThread(function()
                     end
                 end
                 
-                -- 3. HUD Update
+                -- 4. HUD Update
                 local data = {
                     speed = GetEntitySpeed(vehicle) * 2.236936, -- MPH
                     fuel = GetVehicleFuelLevel(vehicle),
@@ -190,6 +233,34 @@ RegisterCommand('setdamage', function(source, args)
         if amount then
             SetVehicleEngineHealth(vehicle, amount + 0.0)
             print('Engine Health set to: ' .. amount)
+            TriggerEvent('chat:addMessage', {args = {'^2Debug', 'Engine health set to: ' .. amount}})
         end
+    end
+end)
+
+RegisterCommand('testcollision', function(source, args)
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if vehicle ~= 0 then
+        local currentHealth = GetVehicleEngineHealth(vehicle)
+        local damage = 100.0
+        local newHealth = currentHealth - damage
+        if newHealth < 0 then newHealth = 0 end
+        
+        SetVehicleEngineHealth(vehicle, newHealth)
+        print(string.format('[Test] Applied %d damage. Health: %.1f -> %.1f', damage, currentHealth, newHealth))
+        TriggerEvent('chat:addMessage', {args = {'^3Test', string.format('Applied %d damage. Health: %.0f -> %.0f', damage, currentHealth, newHealth)}})
+    else
+        TriggerEvent('chat:addMessage', {args = {'^1Error', 'You must be in a vehicle'}})
+    end
+end)
+
+RegisterCommand('checkhealth', function()
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if vehicle ~= 0 then
+        local health = GetVehicleEngineHealth(vehicle)
+        print('Current Engine Health: ' .. health)
+        TriggerEvent('chat:addMessage', {args = {'^2Info', 'Engine Health: ' .. math.floor(health)}})
     end
 end)

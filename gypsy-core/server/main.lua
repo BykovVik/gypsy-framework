@@ -291,10 +291,10 @@ CreateThread(function()
                 if player.metadata.hunger < 0 then player.metadata.hunger = 0 end
                 if player.metadata.thirst < 0 then player.metadata.thirst = 0 end
                 
-                -- TODO: Implement damage system when gypsy-health module is ready
-                -- if player.metadata.hunger <= 0 or player.metadata.thirst <= 0 then
-                --     TriggerClientEvent('gypsy-health:client:applyDamage', src, 5)
-                -- end
+                -- Apply damage when hunger or thirst is zero
+                if player.metadata.hunger <= 0 or player.metadata.thirst <= 0 then
+                    TriggerClientEvent('gypsy-core:client:applyStarvationDamage', src, 5)
+                end
                 
                 TriggerClientEvent('gypsy-core:client:updateStatus', src, player.metadata)
             end

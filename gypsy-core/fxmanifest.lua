@@ -17,6 +17,7 @@ server_scripts {
 }
 
 client_scripts {
+    'client/event_bus.lua',
     'client/main.lua',
     'client/vehicle.lua'
 }

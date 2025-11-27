@@ -57,6 +57,14 @@ RegisterNetEvent('gypsy:client:debug', function(msg)
     print('^2[Gypsy-Core DEBUG] ' .. msg .. '^0')
 end)
 
+RegisterNetEvent('gypsy-core:client:applyStarvationDamage', function(damage)
+    local ped = PlayerPedId()
+    local currentHealth = GetEntityHealth(ped)
+    local newHealth = currentHealth - damage
+    
+    SetEntityHealth(ped, newHealth)
+end)
+
 -- ====================================================================================
 --                                  EXPORTS
 -- ====================================================================================

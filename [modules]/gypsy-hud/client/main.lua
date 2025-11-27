@@ -5,7 +5,18 @@ RegisterNetEvent('gypsy:client:coreReady', function()
     
 end)
 
--- Update HUD Loop
+-- Initialize: Hide radar on start
+CreateThread(function()
+    DisplayRadar(false)
+end)
+
+-- Debug command to check HUD state
+RegisterCommand('checkhud', function()
+    print('isInAppearanceEditor:', isInAppearanceEditor)
+    print('IsPauseMenuActive:', IsPauseMenuActive())
+end, false)
+
+-- Update HUD Loop (Player Stats)
 CreateThread(function()
     while true do
         Wait(200)
@@ -16,11 +27,16 @@ CreateThread(function()
         local armor = GetPedArmour(ped)
         local stamina = 100 - GetPlayerSprintStaminaRemaining(PlayerId())
         
+        -- Microphone indicator (voice activity)
+        local isTalking = NetworkIsPlayerTalking(PlayerId())
+        local micLevel = isTalking and 100 or 0
+        
         SendNUIMessage({
             action = "updateStats",
             health = health,
             armor = armor,
-            stamina = stamina
+            stamina = stamina,
+            microphone = micLevel
         })
     end
 end)
@@ -33,53 +49,95 @@ RegisterNetEvent('gypsy-hud:client:updateStatus', function(metadata)
     })
 end)
 
-RegisterNetEvent('gypsy-hud:client:updateVehicle', function(data)
-    SendNUIMessage({
-        action = "updateVehicle",
-        speed = data.speed,
-        fuel = data.fuel,
-        engine = data.engine,
-        locked = data.locked
-    })
-end)
-
--- Check if player left vehicle to hide HUD
+-- Vehicle HUD Loop (High Frequency for Smoothness)
 CreateThread(function()
     local wasInVehicle = false
+    
     while true do
-        Wait(500)
         local ped = PlayerPedId()
         local inVehicle = IsPedInAnyVehicle(ped, false)
         
-        if wasInVehicle and not inVehicle then
-            SendNUIMessage({ action = "hideVehicle" })
+        if inVehicle then
+            local vehicle = GetVehiclePedIsIn(ped, false)
+            
+            -- If just entered, ensure HUD is shown
+            if not wasInVehicle then
+                SendNUIMessage({
+                    action = "updateVehicle",
+                    speed = 0,
+                    fuel = GetVehicleFuelLevel(vehicle),
+                    engine = GetVehicleEngineHealth(vehicle),
+                    locked = GetVehicleDoorLockStatus(vehicle)
+                })
+            end
+            
+            -- Continuous update
+            SendNUIMessage({
+                action = "updateVehicle",
+                speed = GetEntitySpeed(vehicle) * 2.236936, -- MPH
+                fuel = GetVehicleFuelLevel(vehicle),
+                engine = GetVehicleEngineHealth(vehicle),
+                locked = GetVehicleDoorLockStatus(vehicle)
+            })
+            
+            Wait(50) -- 50ms update rate for smooth animation
+        else
+            -- If just left, hide HUD
+            if wasInVehicle then
+                SendNUIMessage({ action = "hideVehicle" })
+            end
+            
+            Wait(1000) -- Check less frequently when not in vehicle
         end
         
         wasInVehicle = inVehicle
     end
 end)
 
-local isSpawned = false
+-- Local flag for appearance editor state
+local isInAppearanceEditor = false
 
--- HUD will only show after gypsy-core:client:playerLoaded event
--- This prevents HUD from showing during character creation
-
-RegisterNetEvent('gypsy-core:client:playerLoaded', function()
-    isSpawned = true
+-- Get Gypsy Core EventBus
+CreateThread(function()
+    Wait(500) -- Wait for core to load
+    local Gypsy = exports['gypsy-core']:GetCoreObject()
     
+    if Gypsy and Gypsy.EventBus then
+        -- Subscribe to appearance editor events via EventBus
+        Gypsy.EventBus:On('appearance:editor:opened', function()
+            isInAppearanceEditor = true
+            print('[HUD] Appearance editor opened (via EventBus)')
+        end)
+        
+        Gypsy.EventBus:On('appearance:editor:closed', function()
+            isInAppearanceEditor = false
+            print('[HUD] Appearance editor closed (via EventBus)')
+        end)
+        
+        print('[HUD] Subscribed to appearance editor events via EventBus')
+    else
+        print('^3[HUD] Warning: EventBus not available, falling back to direct events^0')
+        
+        -- Fallback to direct events if EventBus not available
+        RegisterNetEvent('gypsy-hud:client:hideForEditor', function()
+            isInAppearanceEditor = true
+            print('[HUD] Received hide event (fallback)')
+        end)
+        
+        RegisterNetEvent('gypsy-hud:client:showAfterEditor', function()
+            isInAppearanceEditor = false
+            print('[HUD] Received show event (fallback)')
+        end)
+    end
 end)
 
-RegisterCommand('showhud', function()
-    isSpawned = true
-    
-end)
-
--- Hide HUD when paused or in UI
+-- Hide HUD when paused or in appearance editor
 CreateThread(function()
     while true do
         Wait(500)
-        -- Hide HUD if: not spawned, paused, or in appearance editor
-        if isSpawned and not IsPauseMenuActive() and not _G.IsInAppearanceEditor then
+        
+        -- Hide HUD only if: paused or in appearance editor
+        if not IsPauseMenuActive() and not isInAppearanceEditor then
             SendNUIMessage({ action = "show" })
         else
             SendNUIMessage({ action = "hide" })
@@ -90,9 +148,6 @@ end)
 -- Hide Default HUD Components
 CreateThread(function()
     local minimap = RequestScaleformMovie("minimap")
-    SetRadarBigmapEnabled(true, false)
-    Wait(0)
-    SetRadarBigmapEnabled(false, false)
 
     while true do
         Wait(0)
@@ -109,4 +164,24 @@ CreateThread(function()
         HideHudComponentThisFrame(8) -- Vehicle Class
         HideHudComponentThisFrame(9) -- Street Name
     end
+end)
+
+-- NUI Callbacks for Radar Control
+RegisterNUICallback('showRadar', function(data, cb)
+    DisplayRadar(true)
+    cb('ok')
+end)
+
+RegisterNUICallback('hideRadar', function(data, cb)
+    DisplayRadar(false)
+    cb('ok')
+end)
+
+-- Listen for time updates from gypsy-weather
+RegisterNetEvent('gypsy-weather:client:timeUpdate', function(hour, minute)
+    local isNight = (hour >= 21 or hour < 6)
+    SendNUIMessage({
+        action = "updateTime",
+        isNight = isNight
+    })
 end)
