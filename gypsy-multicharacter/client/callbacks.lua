@@ -1,5 +1,8 @@
--- Gypsy Multicharacter - NUI Callbacks
--- Handles all NUI communication
+-- ============================================================================
+-- GYPSY MULTICHARACTER - NUI CALLBACKS
+-- ============================================================================
+-- Handles all NUI communication for character selection and creation
+-- ============================================================================
 
 -- ============================================================================
 -- CHARACTER SELECTION
@@ -20,7 +23,7 @@ end)
 -- ============================================================================
 
 RegisterNUICallback('createCharacter', function(data, cb)
-    -- Check if appearance module available
+    -- Check if appearance module is available
     if GetResourceState('gypsy-appearance') == 'started' then
         -- Close multicharacter UI
         SetNuiFocus(false, false)

@@ -1,6 +1,11 @@
 Config = {}
 
--- Spawn Points (6 locations) - Tested coordinates from QBCore/ESX
+-- ============================================================================
+-- SPAWN POINTS
+-- ============================================================================
+-- 6 tested spawn locations across Los Santos
+-- ============================================================================
+
 Config.SpawnPoints = {
     {
         name = "Legion Square",
@@ -40,8 +45,12 @@ Config.SpawnPoints = {
     }
 }
 
--- Character Settings
+-- ============================================================================
+-- CHARACTER SETTINGS
+-- ============================================================================
+
 Config.MaxCharacters = 3
+
 Config.DefaultMoney = {
     cash = 5000,
     bank = 25000
@@ -53,6 +62,11 @@ Config.DefaultJob = {
     grade = 0
 }
 
--- Camera Settings for Character Preview
+-- ============================================================================
+-- CAMERA SETTINGS
+-- ============================================================================
+-- Camera and ped positions for character preview
+-- ============================================================================
+
 Config.CameraCoords = { x = 402.92, y = -996.88, z = -99.00, w = 180.0 }
 Config.PedCoords = { x = 402.92, y = -1000.5, z = -99.00, w = 180.0 }
