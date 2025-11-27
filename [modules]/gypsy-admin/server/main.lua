@@ -1,0 +1,205 @@
+local Gypsy = exports['gypsy-core']:GetCoreObject()
+
+-- Helper to check admin permissions
+local function IsAdmin(source)
+    return IsPlayerAceAllowed(source, 'command')
+end
+
+RegisterCommand('revive', function(source, args)
+    if source == 0 then -- Console
+        if args[1] then
+            local target = tonumber(args[1])
+            
+            -- Используем DeathService если доступен
+            if exports['gypsy-core']:HasService('Death') then
+                local DeathService = exports['gypsy-core']:GetService('Death')
+                DeathService.Revive(target)
+            else
+                -- Fallback
+                TriggerClientEvent('gypsy-admin:client:revive', target)
+            end
+            
+            -- Restore Status через прямой export
+            if exports['gypsy-core'] then
+                exports['gypsy-core']:SetStatus(target, 'hunger', 100)
+                exports['gypsy-core']:SetStatus(target, 'thirst', 100)
+            end
+        end
+        return
+    end
+
+    if IsAdmin(source) then
+        local target = source
+        if args[1] then
+            target = tonumber(args[1])
+        end
+        
+        -- Используем DeathService если доступен
+        if exports['gypsy-core']:HasService('Death') then
+            local DeathService = exports['gypsy-core']:GetService('Death')
+            DeathService.Revive(target)
+        else
+            -- Fallback
+            TriggerClientEvent('gypsy-admin:client:revive', target)
+        end
+        
+        -- Restore Status через прямой export
+        exports['gypsy-core']:SetStatus(target, 'hunger', 100)
+        exports['gypsy-core']:SetStatus(target, 'thirst', 100)
+    else
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'You do not have permission.' } })
+    end
+end)
+
+RegisterCommand('noclip', function(source, args)
+    if IsAdmin(source) then
+        TriggerClientEvent('gypsy-admin:client:toggleNoclip', source)
+    end
+end)
+
+RegisterCommand('tpm', function(source, args)
+    if IsAdmin(source) then
+        TriggerClientEvent('gypsy-admin:client:tpm', source)
+    end
+end)
+
+RegisterCommand('tp', function(source, args)
+    if IsAdmin(source) then
+        local location = args[1]
+        if location and Config.Locations[location] then
+            TriggerClientEvent('gypsy-admin:client:teleport', source, Config.Locations[location])
+        else
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Location not found! Available: sandy, paleto, city, hospital, police, prison, casino, airport' } })
+        end
+    end
+end)
+
+RegisterCommand('setmoney', function(source, args)
+    if IsAdmin(source) then
+        local target = tonumber(args[1])
+        local amount = tonumber(args[2])
+        local type = args[3] or 'cash'
+
+        if not target or not amount then
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Usage: /setmoney [id] [amount] [type]' } })
+            return
+        end
+
+        local player = exports['gypsy-core']:GetPlayer(target)
+        if player then
+            player.Functions.SetMoney(type, amount, "Admin Command")
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Set ' .. type .. ' of ' .. player.charinfo.firstname .. ' to ' .. amount } })
+        else
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Player not found.' } })
+        end
+    end
+end)
+
+RegisterCommand('givemoney', function(source, args)
+    if IsAdmin(source) then
+        local target = tonumber(args[1])
+        local amount = tonumber(args[2])
+        local type = args[3] or 'cash'
+
+        if not target or not amount then
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Usage: /givemoney [id] [amount] [type]' } })
+            return
+        end
+
+        local player = exports['gypsy-core']:GetPlayer(target)
+        if player then
+            player.Functions.AddMoney(type, amount, "Admin Command")
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Gave ' .. amount .. ' ' .. type .. ' to ' .. player.charinfo.firstname } })
+        else
+            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Player not found.' } })
+        end
+    end
+end)
+
+-- Команда для спавна машин
+RegisterCommand('car', function(source, args)
+    if source == 0 then
+        print('[Admin] Cannot spawn vehicle from console')
+        return
+    end
+
+    if not IsAdmin(source) then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'You do not have permission.' } })
+        return
+    end
+
+    if not args[1] then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Usage: /car [model]' } })
+        return
+    end
+
+    local model = args[1]
+    TriggerClientEvent('gypsy-admin:client:spawnVehicle', source, model)
+end)
+
+-- ====================================================================================
+--                              ADMIN SERVICE
+-- ====================================================================================
+
+local AdminService = {
+    version = '1.0.0',
+    
+    --- Возрождает игрока
+    Revive = function(target)
+        if exports['gypsy-core']:HasService('Death') then
+            local DeathService = exports['gypsy-core']:GetService('Death')
+            DeathService.Revive(target)
+        else
+            TriggerClientEvent('gypsy-admin:client:revive', target)
+        end
+        
+        exports['gypsy-core']:SetStatus(target, 'hunger', 100)
+        exports['gypsy-core']:SetStatus(target, 'thirst', 100)
+        return true
+    end,
+    
+    --- Телепортирует игрока
+    Teleport = function(source, location)
+        if Config.Locations[location] then
+            TriggerClientEvent('gypsy-admin:client:teleport', source, Config.Locations[location])
+            return true
+        end
+        return false
+    end,
+    
+    --- Включает/выключает noclip
+    ToggleNoclip = function(source)
+        TriggerClientEvent('gypsy-admin:client:toggleNoclip', source)
+        return true
+    end,
+    
+    --- Выдает деньги
+    GiveMoney = function(target, amount, moneyType)
+        local player = exports['gypsy-core']:GetPlayer(target)
+        if player then
+            player.Functions.AddMoney(moneyType or 'cash', amount, "Admin Command")
+            return true
+        end
+        return false
+    end,
+    
+    --- Устанавливает деньги
+    SetMoney = function(target, amount, moneyType)
+        local player = exports['gypsy-core']:GetPlayer(target)
+        if player then
+            player.Functions.SetMoney(moneyType or 'cash', amount, "Admin Command")
+            return true
+        end
+        return false
+    end
+}
+
+-- Регистрируем сервис в ServiceLocator
+CreateThread(function()
+    Wait(1000)
+    exports['gypsy-core']:RegisterService('Admin', AdminService, {
+        version = '1.0.0',
+        description = 'Gypsy Admin System'
+    })
+    print('^2[Admin] Service registered in ServiceLocator^0')
+end)

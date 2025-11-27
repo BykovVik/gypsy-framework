@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    user-select: none;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: transparent;
+}
+
+.container {
+    width: 800px;
+    height: 600px;
+    background: rgba(20, 20, 25, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.header {
+    padding: 20px 30px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header h1 {
+    margin: 0;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header h1 i {
+    color: #4488ff;
+}
+
+#close-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+#close-btn:hover {
+    color: #ff4444;
+}
+
+.vehicle-list {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.vehicle-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vehicle-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.vehicle-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.vehicle-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.vehicle-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(68, 136, 255, 0.3);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.vehicle-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.vehicle-plate {
+    font-size: 12px;
+    color: #888;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+.status-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.status-in {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.status-out {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.vehicle-stats {
+    display: flex;
+    gap: 15px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.stat i {
+    font-size: 12px;
+}
+
+.stat.fuel i {
+    color: #ffcc00;
+}
+
+.stat.engine i {
+    color: #4caf50;
+}
+
+.spawn-btn {
+    width: 100%;
+    padding: 12px;
+    background: #4488ff;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: auto;
+}
+
+.spawn-btn:hover {
+    background: #3377ee;
+}
+
+.spawn-btn:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: #666;
+    cursor: not-allowed;
+}

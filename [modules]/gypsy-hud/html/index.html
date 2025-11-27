@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gypsy HUD</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="hud-container" id="hud-container">
+        <!-- Player Stats (Bottom Center) -->
+        <div class="player-stats">
+            <div class="status-circle health">
+                <img src="./icon/Health.svg" alt="Health" />
+                <svg viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28"></circle>
+                    <circle cx="32" cy="32" r="28" id="health-fill"></circle>
+                </svg>
+            </div>
+            <div class="status-circle hunger">
+                <img src="./icon/Food.svg" alt="Food" />
+                <svg viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28"></circle>
+                    <circle cx="32" cy="32" r="28" id="hunger-fill"></circle>
+                </svg>
+            </div>
+            <div class="status-circle stamina">
+                <img src="./icon/Icon.svg" alt="Stamina" />
+                <svg viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28"></circle>
+                    <circle cx="32" cy="32" r="28" id="stamina-fill"></circle>
+                </svg>
+            </div>
+            <div class="status-circle thirst">
+                <img src="./icon/Water.svg" alt="Water" />
+                <svg viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28"></circle>
+                    <circle cx="32" cy="32" r="28" id="thirst-fill"></circle>
+                </svg>
+            </div>
+            <div class="status-circle armor">
+                <img src="./icon/Microphone.svg" alt="Armor" />
+                <svg viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28"></circle>
+                    <circle cx="32" cy="32" r="28" id="armor-fill"></circle>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Minimap Border (Bottom Left) -->
+        <div class="minimap-border" id="minimap-border"></div>
+
+        <!-- Vehicle HUD (Bottom Left, next to Minimap) -->
+        <div class="vehicle-hud" id="vehicle-hud" style="display: none;">
+            <div class="speedometer">
+                <span id="speed">0</span>
+                <span class="unit">MPH</span>
+            </div>
+            <div class="vehicle-stats">
+                <div class="status-circle fuel">
+                    <img src="./icon/Fuel.svg" alt="Fuel" />
+                    <svg viewBox="0 0 64 64">
+                        <circle cx="32" cy="32" r="28"></circle>
+                        <circle cx="32" cy="32" r="28" id="fuel-fill"></circle>
+                    </svg>
+                </div>
+                <div class="status-circle engine">
+                    <img src="./icon/Icon.svg" alt="Engine" />
+                    <svg viewBox="0 0 64 64">
+                        <circle cx="32" cy="32" r="28"></circle>
+                        <circle cx="32" cy="32" r="28" id="engine-fill"></circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

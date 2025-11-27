@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="bank_style.css">
+</head>
+
+<body>
+    <!-- ATM UI -->
+    <div class="atm-container" id="atm-container" style="display: none;">
+        <div class="atm-screen">
+            <div class="atm-header">
+                <h1>AMBER TERMINAL</h1>
+                <p class="retro-text">Быстрые операции 24/7</p>
+            </div>
+
+            <div class="account-info">
+                <div class="balance-item">
+                    <span class="label">Cash:</span>
+                    <span class="value" id="cash-balance">$0</span>
+                </div>
+                <div class="balance-item">
+                    <span class="label">Bank:</span>
+                    <span class="value" id="bank-balance">$0</span>
+                </div>
+            </div>
+
+            <div class="atm-actions">
+                <div class="main-operations">
+                    <div class="action-section">
+                        <h3>Quick Cash</h3>
+                        <p class="section-hint">Быстрое снятие наличных</p>
+                        <div class="quick-buttons">
+                            <button class="atm-btn" onclick="withdrawCash(100)">$100</button>
+                            <button class="atm-btn" onclick="withdrawCash(500)">$500</button>
+                            <button class="atm-btn" onclick="withdrawCash(1000)">$1000</button>
+                            <button class="atm-btn" onclick="withdrawCash(5000)">$5000</button>
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <h3>Custom Amount</h3>
+                        <p class="section-hint">Произвольная сумма</p>
+                        <input type="number" id="custom-amount" placeholder="Введите сумму" min="1">
+                        <div class="custom-buttons">
+                            <button class="atm-btn primary" onclick="withdrawCashCustom()">
+                                Withdraw
+                                <span class="btn-hint">снять</span>
+                            </button>
+                            <button class="atm-btn primary" onclick="depositCashCustom()">
+                                Deposit
+                                <span class="btn-hint">внести</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="atm-btn close-btn" onclick="closeATM()">Close</button>
+        </div>
+    </div>
+
+    <!-- BANK UI -->
+    <div class="bank-container" id="bank-container" style="display: none;">
+        <div class="bank-screen">
+            <!-- Header -->
+            <div class="bank-header">
+                <div class="bank-logo">
+                    <h1>FLEECA</h1>
+                    <p class="bank-subtitle">private banking services</p>
+                </div>
+                <div class="bank-time" id="bank-time">14:30</div>
+            </div>
+
+            <!-- Account Overview -->
+            <div class="account-overview">
+                <div class="balance-card">
+                    <span class="card-label">CASH<br><small>наличные</small></span>
+                    <span class="card-value" id="cash-balance-bank">$0</span>
+                </div>
+                <div class="balance-card">
+                    <span class="card-label">ACCOUNT<br><small>счет</small></span>
+                    <span class="card-value" id="bank-balance-bank">$0</span>
+                </div>
+                <div class="balance-card highlight">
+                    <span class="card-label">SAVINGS<br><small>вклад</small></span>
+                    <span class="card-value" id="savings-balance-bank">$0</span>
+                    <span class="card-hint">+0.5% daily</span>
+                </div>
+            </div>
+
+            <!-- Main Content - Two Columns -->
+            <div class="bank-content">
+                <!-- Left Column - Cash Operations -->
+                <div class="operations-column">
+                    <h2>CASH OPERATIONS</h2>
+                    <p class="column-hint">операции с наличными</p>
+
+                    <div class="operation-group">
+                        <label>AMOUNT<br><small>сумма</small></label>
+                        <input type="number" id="cash-amount-bank" placeholder="Enter amount">
+                        <div class="button-row">
+                            <button class="bank-btn primary" onclick="withdrawCashBank()">
+                                WITHDRAW
+                                <small>снять</small>
+                            </button>
+                            <button class="bank-btn primary" onclick="depositCashBank()">
+                                DEPOSIT
+                                <small>внести</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="quick-amounts">
+                        <span class="quick-label">QUICK SELECT<br><small>быстрый выбор</small></span>
+                        <button class="quick-btn" onclick="setAmount('cash', 100)">$100</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 500)">$500</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 1000)">$1K</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 5000)">$5K</button>
+                    </div>
+                </div>
+
+                <!-- Right Column - Savings -->
+                <div class="savings-column">
+                    <h2>SAVINGS ACCOUNT</h2>
+                    <p class="column-hint">накопительный счет</p>
+
+                    <div class="savings-info">
+                        <div class="info-row">
+                            <span>CURRENT BALANCE<br><small>текущий баланс</small></span>
+                            <span class="info-value" id="savings-display-bank">$0</span>
+                        </div>
+                        <div class="info-row">
+                            <span>INTEREST RATE<br><small>процентная ставка</small></span>
+                            <span class="info-value">0.5% / day</span>
+                        </div>
+                        <div class="info-row">
+                            <span>ACCRUAL<br><small>начисление</small></span>
+                            <span class="info-value">Hourly</span>
+                        </div>
+                    </div>
+
+                    <div class="operation-group">
+                        <label>AMOUNT<br><small>сумма</small></label>
+                        <input type="number" id="savings-amount-bank" placeholder="Enter amount">
+                        <div class="button-row">
+                            <button class="bank-btn success" onclick="depositSavingsBank()">
+                                TO SAVINGS
+                                <small>на вклад</small>
+                            </button>
+                            <button class="bank-btn success" onclick="withdrawSavingsBank()">
+                                FROM SAVINGS
+                                <small>с вклада</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <button class="bank-btn close" onclick="closeBank()">CLOSE<br><small>закрыть</small></button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="bank_script.js"></script>
+</body>
+
+</html>

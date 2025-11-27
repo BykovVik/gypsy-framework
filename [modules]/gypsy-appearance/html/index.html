@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Appearance</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="appearance-editor" id="appearance-editor" style="display: none;">
+        <div class="editor-header">
+            <h1 class="neon-text">CUSTOMIZE APPEARANCE</h1>
+            <small>кастомизация внешности</small>
+        </div>
+
+        <div class="editor-content">
+            <!-- Heritage Section -->
+            <div class="section">
+                <h2>HERITAGE <small>наследственность</small></h2>
+                <div class="slider-group">
+                    <label>Mother / Father Mix <small>смесь мать/отец</small></label>
+                    <input type="range" id="heritage-mix" min="0" max="100" value="50" class="slider">
+                    <span class="slider-value" id="heritage-mix-value">50%</span>
+                </div>
+                <div class="slider-group">
+                    <label>Skin Tone <small>тон кожи</small></label>
+                    <input type="range" id="skin-tone" min="0" max="100" value="50" class="slider">
+                    <span class="slider-value" id="skin-tone-value">50%</span>
+                </div>
+            </div>
+
+            <!-- Hair Section -->
+            <div class="section">
+                <h2>HAIR <small>волосы</small></h2>
+                <div class="grid-selector" id="hair-styles"></div>
+                <div class="color-selector">
+                    <label>Hair Color <small>цвет волос</small></label>
+                    <div class="color-grid" id="hair-colors"></div>
+                </div>
+            </div>
+
+            <!-- Eyes Section -->
+            <div class="section">
+                <h2>EYES <small>глаза</small></h2>
+                <div class="color-selector">
+                    <label>Eye Color <small>цвет глаз</small></label>
+                    <div class="color-grid" id="eye-colors"></div>
+                </div>
+            </div>
+
+            <!-- Clothing Section -->
+            <div class="section">
+                <h2>CLOTHING <small>одежда</small></h2>
+                
+                <div class="clothing-category">
+                    <label>Top <small>верх</small></label>
+                    <div class="grid-selector" id="clothing-torso"></div>
+                </div>
+
+                <div class="clothing-category">
+                    <label>Pants <small>низ</small></label>
+                    <div class="grid-selector" id="clothing-legs"></div>
+                </div>
+
+                <div class="clothing-category">
+                    <label>Shoes <small>обувь</small></label>
+                    <div class="grid-selector" id="clothing-shoes"></div>
+                </div>
+            </div>
+
+            <!-- Camera Controls -->
+            <div class="camera-controls">
+                <button class="cam-btn" onclick="changeCamera('face')">FACE</button>
+                <button class="cam-btn" onclick="changeCamera('body')">BODY</button>
+                <button class="cam-btn" onclick="changeCamera('legs')">LEGS</button>
+            </div>
+        </div>
+
+        <div class="editor-footer">
+            <button class="btn btn-cancel" onclick="cancelAppearance()">CANCEL <small>отмена</small></button>
+            <button class="btn btn-save" onclick="saveAppearance()">SAVE <small>сохранить</small></button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

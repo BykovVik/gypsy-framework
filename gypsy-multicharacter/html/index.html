@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Selection</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="char-container" id="char-container" style="display: none;">
+        <div class="background"></div>
+
+        <div class="header">
+            <h1 class="neon-text">CHARACTER SELECTION</h1>
+            <small>выбор персонажа</small>
+        </div>
+
+        <div class="slots-container" id="slots-container">
+            <div class="slot-card" data-slot="1" id="slot-1">
+                <div class="slot-empty">
+                    <div class="plus-icon">+</div>
+                    <p>CREATE CHARACTER</p>
+                    <small>создать персонажа</small>
+                </div>
+            </div>
+
+            <div class="slot-card" data-slot="2" id="slot-2">
+                <div class="slot-empty">
+                    <div class="plus-icon">+</div>
+                    <p>CREATE CHARACTER</p>
+                    <small>создать персонажа</small>
+                </div>
+            </div>
+
+            <div class="slot-card" data-slot="3" id="slot-3">
+                <div class="slot-empty">
+                    <div class="plus-icon">+</div>
+                    <p>CREATE CHARACTER</p>
+                    <small>создать персонажа</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="char-actions" id="char-actions" style="display: none;">
+            <button class="btn btn-play" onclick="playCharacter()">PLAY <small>играть</small></button>
+            <button class="btn btn-delete" onclick="deleteCharacter()">DELETE <small>удалить</small></button>
+            <button class="btn btn-back" onclick="backToSelection()">BACK <small>назад</small></button>
+        </div>
+
+        <div class="error-message" id="error-message"></div>
+    </div>
+
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop" id="modal-backdrop" style="display: none;"></div>
+
+    <!-- Creation Form Pop-up -->
+    <div class="creation-form" id="creation-form" style="display: none;">
+        <h2>CREATE NEW CHARACTER <small>создание персонажа</small></h2>
+
+        <div class="form-group">
+            <label>FIRST NAME <small>имя</small></label>
+            <input type="text" id="firstname" placeholder="John" maxlength="50">
+        </div>
+
+        <div class="form-group">
+            <label>LAST NAME <small>фамилия</small></label>
+            <input type="text" id="lastname" placeholder="Doe" maxlength="50">
+        </div>
+
+        <div class="form-group">
+            <label>DATE OF BIRTH <small>дата рождения</small></label>
+            <input type="date" id="birthdate">
+        </div>
+
+        <div class="form-group">
+            <label>GENDER <small>пол</small></label>
+            <select id="gender">
+                <option value="0">Male / Мужской</option>
+                <option value="1">Female / Женский</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn btn-cancel" onclick="cancelCreation()">CANCEL <small>отмена</small></button>
+            <button class="btn btn-create" onclick="createCharacter()">CONTINUE <small>продолжить</small></button>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Dialog -->
+    <div class="confirm-dialog" id="confirm-delete" style="display: none;">
+        <div class="confirm-content">
+            <h3>DELETE CHARACTER?</h3>
+            <small>удалить персонажа?</small>
+            <p>This action cannot be undone!</p>
+            <div class="confirm-actions">
+                <button class="btn btn-cancel" onclick="cancelDelete()">CANCEL</button>
+                <button class="btn btn-confirm" onclick="confirmDelete()">DELETE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spawn Location Selection -->
+    <div class="spawn-selection" id="spawn-selection" style="display: none;">
+        <div class="spawn-header">
+            <h2 class="neon-text">CHOOSE YOUR STARTING LOCATION</h2>
+            <small>выберите начальную локацию</small>
+        </div>
+
+        <div class="spawn-grid" id="spawn-grid">
+            <!-- Locations will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

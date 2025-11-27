@@ -1,0 +1,142 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+}
+
+.hud-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* Player Stats (Bottom Center) */
+.player-stats {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.status-circle {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.status-circle img {
+    width: 64px;
+    height: 64px;
+    z-index: 1;
+    opacity: 0.9;
+}
+
+.status-circle svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 64px;
+    height: 64px;
+    transform: rotate(-90deg);
+    z-index: 2;
+}
+
+.status-circle circle {
+    fill: none;
+    stroke-width: 6;
+    stroke: rgba(255, 255, 255, 0.2);
+}
+
+.status-circle circle:nth-child(2) {
+    stroke-dasharray: 175;
+    /* 2 * PI * 28 */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+/* Colors */
+.health circle:nth-child(2) {
+    stroke: #f36b15;
+}
+
+.armor circle:nth-child(2) {
+    stroke: #4488ff;
+}
+
+.hunger circle:nth-child(2) {
+    stroke: #fbcb4f;
+}
+
+.thirst circle:nth-child(2) {
+    stroke: #92dbba;
+}
+
+.stamina circle:nth-child(2) {
+    stroke: #75bfcc;
+}
+
+.fuel circle:nth-child(2) {
+    stroke: #ffcc00;
+}
+
+.engine circle:nth-child(2) {
+    stroke: #4caf50;
+}
+
+/* Minimap Border */
+.minimap-border {
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    width: 290px;
+    height: 165px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    z-index: 900;
+    display: none;
+}
+
+/* Vehicle HUD */
+.vehicle-hud {
+    position: absolute;
+    bottom: 20px;
+    left: 320px;
+    /* Right of minimap */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.speedometer {
+    font-family: 'Arial', sans-serif;
+    color: white;
+    text-shadow: 2px 2px 4px black;
+}
+
+.speedometer #speed {
+    font-size: 48px;
+    font-weight: bold;
+}
+
+.speedometer .unit {
+    font-size: 24px;
+    margin-left: 5px;
+    color: #ccc;
+}
+
+.vehicle-stats {
+    display: flex;
+    gap: 10px;
+}

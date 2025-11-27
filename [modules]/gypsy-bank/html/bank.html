@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleeca Bank</title>
+    <link rel="stylesheet" href="bank_style.css">
+</head>
+
+<body>
+    <div class="bank-container" id="bank-container" style="display: none;">
+        <div class="bank-screen">
+            <!-- Header -->
+            <div class="bank-header">
+                <div class="bank-logo">
+                    <h1>FLEECA</h1>
+                    <p class="bank-subtitle">Private Banking Services</p>
+                </div>
+                <div class="bank-time" id="bank-time">14:30</div>
+            </div>
+
+            <!-- Account Overview -->
+            <div class="account-overview">
+                <div class="balance-card">
+                    <span class="card-label">Наличные</span>
+                    <span class="card-value" id="cash-balance-bank">$0</span>
+                </div>
+                <div class="balance-card">
+                    <span class="card-label">Счет</span>
+                    <span class="card-value" id="bank-balance-bank">$0</span>
+                </div>
+                <div class="balance-card highlight">
+                    <span class="card-label">Вклад</span>
+                    <span class="card-value" id="savings-balance-bank">$0</span>
+                    <span class="card-hint">+0.5% в день</span>
+                </div>
+            </div>
+
+            <!-- Main Content - Two Columns -->
+            <div class="bank-content">
+                <!-- Left Column - Cash Operations -->
+                <div class="operations-column">
+                    <h2>Операции с наличными</h2>
+
+                    <div class="operation-group">
+                        <label>Сумма</label>
+                        <input type="number" id="cash-amount-bank" placeholder="Введите сумму">
+                        <div class="button-row">
+                            <button class="bank-btn primary" onclick="withdrawCashBank()">
+                                Снять
+                            </button>
+                            <button class="bank-btn primary" onclick="depositCashBank()">
+                                Внести
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="quick-amounts">
+                        <span class="quick-label">Быстрый выбор:</span>
+                        <button class="quick-btn" onclick="setAmount('cash', 100)">$100</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 500)">$500</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 1000)">$1K</button>
+                        <button class="quick-btn" onclick="setAmount('cash', 5000)">$5K</button>
+                    </div>
+                </div>
+
+                <!-- Right Column - Savings -->
+                <div class="savings-column">
+                    <h2>Накопительный счет</h2>
+
+                    <div class="savings-info">
+                        <div class="info-row">
+                            <span>Текущий баланс:</span>
+                            <span class="info-value" id="savings-display-bank">$0</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Процентная ставка:</span>
+                            <span class="info-value">0.5% / день</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Начисление:</span>
+                            <span class="info-value">Каждый час</span>
+                        </div>
+                    </div>
+
+                    <div class="operation-group">
+                        <label>Сумма</label>
+                        <input type="number" id="savings-amount-bank" placeholder="Введите сумму">
+                        <div class="button-row">
+                            <button class="bank-btn success" onclick="depositSavingsBank()">
+                                На вклад
+                            </button>
+                            <button class="bank-btn success" onclick="withdrawSavingsBank()">
+                                С вклада
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <button class="bank-btn close" onclick="closeBankUI()">Закрыть</button>
+        </div>
+    </div>
+
+    <script src="bank_script.js"></script>
+</body>
+
+</html>
