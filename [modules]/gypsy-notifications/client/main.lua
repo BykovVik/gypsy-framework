@@ -24,8 +24,6 @@ local function ShowNotification(message, type, duration)
             icon = Config.Icons[type] or Config.Icons.info
         }
     })
-    
-    print('^3[Notifications] Showing: ' .. message .. ' (Type: ' .. type .. ')^0')
 end
 
 -- ====================================================================================

@@ -1,8 +1,32 @@
 local Gypsy = exports['gypsy-core']:GetCoreObject()
 
+-- ====================================================================================
+--                              HELPER FUNCTIONS
+-- ====================================================================================
+
+--- Helper: Show notification
+--- @param message string Notification message
+--- @param type string Notification type (success, error, warning, info)
+--- @param duration number Duration in ms (optional)
+local function Notify(message, type, duration)
+    local success, err = pcall(function()
+        exports['gypsy-notifications']:Notify(message, type or 'info', duration or 3000)
+    end)
+    
+    if not success then
+        print('^1[Garage Client] Notification error: ' .. tostring(err) .. '^0')
+        print('^3[Garage Client] Message: ' .. message .. '^0')
+        -- Fallback to chat
+        TriggerEvent('chat:addMessage', {args = {'Garage', message}})
+    end
+end
+
+-- ====================================================================================
+--                              CORE
+-- ====================================================================================
+
 RegisterNetEvent('gypsy:client:coreReady', function()
     Gypsy = exports['gypsy-core']:GetCoreObject()
-    
 end)
 
 -- Blips
