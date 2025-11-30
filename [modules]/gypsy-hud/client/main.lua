@@ -185,3 +185,92 @@ RegisterNetEvent('gypsy-weather:client:timeUpdate', function(hour, minute)
         isNight = isNight
     })
 end)
+
+-- ====================================================================================
+--                      SMART NOTIFICATIONS SYSTEM
+-- ====================================================================================
+
+local NotificationConfig = {
+    Interval = 1 * 60 * 1000,  -- 1 minute (reduced from 3)
+    Thresholds = {
+        Hunger = 20,
+        Thirst = 20,
+        Fuel = 15,              -- 15% fuel
+        EngineHealth = 300      -- 0-1000 scale, 300 = 30%
+    }
+}
+
+local LastNotifications = {
+    hunger = 0,
+    thirst = 0,
+    fuel = 0,
+    engine = 0
+}
+
+-- Smart notification system (non-intrusive warnings)
+CreateThread(function()
+    while true do
+        Wait(10000)  -- Check every 10 seconds
+        
+        local currentTime = GetGameTimer()
+        local PlayerData = Gypsy.Functions.GetPlayerData()
+        
+        if PlayerData and PlayerData.metadata then
+            -- Check Hunger
+            if PlayerData.metadata.hunger <= NotificationConfig.Thresholds.Hunger then
+                if (currentTime - LastNotifications.hunger) >= NotificationConfig.Interval then
+                    exports['gypsy-notifications']:Notify(
+                        'Вы голодны. Найдите еду.',
+                        'warning',
+                        4000
+                    )
+                    LastNotifications.hunger = currentTime
+                end
+            end
+            
+            -- Check Thirst
+            if PlayerData.metadata.thirst <= NotificationConfig.Thresholds.Thirst then
+                if (currentTime - LastNotifications.thirst) >= NotificationConfig.Interval then
+                    exports['gypsy-notifications']:Notify(
+                        'Вы хотите пить. Найдите воду.',
+                        'warning',
+                        4000
+                    )
+                    LastNotifications.thirst = currentTime
+                end
+            end
+        end
+        
+        -- Check Fuel and Engine Health (if in vehicle)
+        local ped = PlayerPedId()
+        if IsPedInAnyVehicle(ped, false) then
+            local vehicle = GetVehiclePedIsIn(ped, false)
+            local fuel = GetVehicleFuelLevel(vehicle)
+            local engineHealth = GetVehicleEngineHealth(vehicle)
+            
+            -- Check Fuel
+            if fuel <= NotificationConfig.Thresholds.Fuel then
+                if (currentTime - LastNotifications.fuel) >= NotificationConfig.Interval then
+                    exports['gypsy-notifications']:Notify(
+                        'Низкий уровень топлива! Заправьтесь.',
+                        'warning',
+                        4000
+                    )
+                    LastNotifications.fuel = currentTime
+                end
+            end
+            
+            -- Check Engine Health
+            if engineHealth <= NotificationConfig.Thresholds.EngineHealth then
+                if (currentTime - LastNotifications.engine) >= NotificationConfig.Interval then
+                    exports['gypsy-notifications']:Notify(
+                        'Двигатель сильно поврежден! Требуется ремонт.',
+                        'error',
+                        4000
+                    )
+                    LastNotifications.engine = currentTime
+                end
+            end
+        end
+    end
+end)

@@ -293,7 +293,7 @@ CreateThread(function()
                 
                 -- Apply damage when hunger or thirst is zero
                 if player.metadata.hunger <= 0 or player.metadata.thirst <= 0 then
-                    TriggerClientEvent('gypsy-core:client:applyStarvationDamage', src, 5)
+                    TriggerClientEvent('gypsy-core:client:applyStarvationDamage', src, 2)
                 end
                 
                 TriggerClientEvent('gypsy-core:client:updateStatus', src, player.metadata)

@@ -60,9 +60,9 @@ end)
 RegisterNetEvent('gypsy-core:client:applyStarvationDamage', function(damage)
     local ped = PlayerPedId()
     local currentHealth = GetEntityHealth(ped)
-    local newHealth = currentHealth - damage
-    
-    SetEntityHealth(ped, newHealth)
+    if currentHealth > 100 then  -- Only damage if alive
+        SetEntityHealth(ped, currentHealth - 2)  -- Reduced from 5 to 2 HP
+    end
 end)
 
 -- ====================================================================================
