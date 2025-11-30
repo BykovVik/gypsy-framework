@@ -5,47 +5,37 @@ local CurrentTarget = nil
 local IsTargeting = false
 local IsMenuOpen = false
 
+-- Local Config (to avoid conflicts with gypsy-core and other modules)
+local InteractConfig = {
+    InteractKey = 19,       -- Left Alt
+    MaxDistance = 5.0,
+    RayRadius = 0.5,
+    Debug = false
+}
+
 -- Raycast Function
 -- Sphere/Cone Cast Function
+-- Raycast Function
 local function GetEntityInFront()
     local ped = PlayerPedId()
     local pos = GetEntityCoords(ped)
-    local forward = GetEntityForwardVector(ped)
-    local maxDist = 5.0
-    local closestEntity = 0
-    local closestDist = maxDist
+    local offset = GetOffsetFromEntityInWorldCoords(ped, 0.0, InteractConfig.MaxDistance, 0.0)
     
-    -- Helper to check pool
-    local function CheckPool(pool)
-        for _, entity in ipairs(pool) do
-            if entity ~= ped then
-                local entPos = GetEntityCoords(entity)
-                local dist = #(pos - entPos)
-                
-                if dist < closestDist then
-                    -- Check angle (Dot Product)
-                    local dir = entPos - pos
-                    local dirNorm = dir / dist
-                    local dot = dot(forward, dirNorm)
-                    
-                    -- 0.5 is roughly 60 degrees, 0.8 is roughly 35 degrees
-                    if dot > 0.5 then 
-                        closestEntity = entity
-                        closestDist = dist
-                    end
-                end
-            end
-        end
+    -- Start Shape Test (Capsule is better for hitting thin objects)
+    -- 10 = Vehicles, Peds, Objects (2 + 4 + 16? No, 10 is usually Vehicles(2) + Peds(8) or similar. Let's use -1 for everything or specific flags)
+    -- Flags: 1=Map, 2=Vehicles, 4=Peds, 8=Objects, 16=Unk, 32=Unk, 64=Unk, 128=Unk, 256=Plants
+    -- We want Vehicles (2) + Peds (4) + Objects (16) = 22. Or just -1 to hit everything except map?
+    -- Let's try 30 (2+4+8+16) or just -1 but exclude map (1).
+    -- Actually, 286 is a common flag for interaction (Vehicles, Peds, Objects).
+    
+    local handle = StartShapeTestCapsule(pos.x, pos.y, pos.z, offset.x, offset.y, offset.z, InteractConfig.RayRadius, 30, ped, 0)
+    local _, hit, _, _, entity = GetShapeTestResult(handle)
+    
+    if InteractConfig.Debug then
+        DrawLine(pos.x, pos.y, pos.z, offset.x, offset.y, offset.z, 255, 0, 0, 255)
     end
     
-    CheckPool(GetGamePool('CVehicle'))
-    CheckPool(GetGamePool('CPed'))
-    
-    if closestEntity > 0 then
-        return 1, closestEntity
-    else
-        return 0, 0
-    end
+    return hit, entity
 end
 
 -- Main Loop
@@ -58,8 +48,8 @@ CreateThread(function()
         if IsMenuOpen then
             Wait(500)
         else
-            -- Check for Alt key (19 = Left Alt)
-            if IsControlPressed(0, 19) then
+            -- Check for Interaction Key
+            if IsControlPressed(0, InteractConfig.InteractKey) then
                 sleep = 0
                 if not IsTargeting then
                     IsTargeting = true
@@ -71,47 +61,27 @@ CreateThread(function()
                 DisableControlAction(0, 24, true) -- Attack
                 DisableControlAction(0, 25, true) -- Aim
     
-                -- Debug Input
-                -- if IsDisabledControlJustPressed(0, 25) then
-                --     print('[Interact] DEBUG: RMB Pressed (Disabled)')
-                -- end
-    
                 local hit, entity = GetEntityInFront()
-                
-                -- Debug Raw Raycast
-                -- if GetGameTimer() % 1000 < 20 then
-                --    print('[Interact] Raycast: Hit=' .. tostring(hit) .. ' Entity=' .. tostring(entity))
-                -- end
 
-                if hit == 1 and entity > 0 then
+                if hit == 1 and entity > 0 and DoesEntityExist(entity) then
                     local model = GetEntityModel(entity)
                     local options = Targets[model]
                     
                     -- Check Globals
                     if not options then
                         if IsEntityAVehicle(entity) then 
-                            options = GlobalVehicleOptions 
-                            print('[Interact] Using Global Vehicle Options. Count: ' .. (options and #options or 0)) 
-                        end
-                        if IsEntityAPed(entity) then 
-                            options = GlobalPedOptions 
-                            print('[Interact] Using Global Ped Options. Count: ' .. (options and #options or 0))
+                            options = GlobalVehicleOptions
+                        elseif IsEntityAPed(entity) then 
+                            options = GlobalPedOptions
                         end
                     end
                     
-                    if options then
+                    if options and #options > 0 then
                         -- Valid Target Found
                         SendNUIMessage({action = 'activeEye'})
-                        
-                        -- Debug: Print every second to confirm we see the entity
-                        -- if GetGameTimer() % 1000 < 20 then
-                        --     print('[Interact] Targeting Entity: ' .. entity .. ' | Options: YES')
-                        -- end
     
                         -- If clicked (Right Mouse Button)
-                        -- Use IsDisabledControlJustReleased because we disabled the control above
                         if IsDisabledControlJustReleased(0, 25) then
-                            print('[Interact] Right Click detected on entity: ' .. entity)
                             CurrentTarget = {entity = entity, options = options}
                             
                             -- Prepare options for NUI (remove functions)
@@ -122,9 +92,7 @@ CreateThread(function()
                                     icon = option.icon
                                 })
                             end
-                            print('[Interact] Sending ' .. #uiOptions .. ' options to NUI')
                             
-                            -- print('[Interact] Sending options to NUI') -- Safe print
                             SendNUIMessage({
                                 action = 'setOptions',
                                 options = uiOptions
