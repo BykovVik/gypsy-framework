@@ -43,10 +43,16 @@ CREATE TABLE IF NOT EXISTS `gypsy_vehicles` (
   `engine` float DEFAULT 1000,
   `body` float DEFAULT 1000,
   `mods` longtext DEFAULT NULL,
+  `impound_fee` int(11) DEFAULT 0,
+  `impounded_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `plate` (`plate`),
   KEY `citizenid` (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Обновление для существующих таблиц (если поля отсутствуют)
+-- CALL: ALTER TABLE `gypsy_vehicles` ADD COLUMN IF NOT EXISTS `impound_fee` int(11) DEFAULT 0;
+-- CALL: ALTER TABLE `gypsy_vehicles` ADD COLUMN IF NOT EXISTS `impounded_at` timestamp NULL DEFAULT NULL;
 
 -- ============================================================================
 -- ТАБЛИЦА ИНВЕНТАРЯ

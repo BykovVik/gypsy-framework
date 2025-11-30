@@ -93,13 +93,56 @@ local GarageService = {
         return true
     end,
     
-    --- Конфискует машину
-    ImpoundVehicle = function(source, plate)
-        exports.oxmysql:execute('UPDATE gypsy_vehicles SET state = 1 WHERE plate = ?', {plate})
-        exports['gypsy-core']:Emit('garage:vehicleImpounded', source, plate)
+    --- Конфискует машину (отправляет на штрафплощадку)
+    ImpoundVehicle = function(plate, fee)
+        fee = fee or 500
+        exports.oxmysql:execute('UPDATE gypsy_vehicles SET state = 2, impound_fee = ?, impounded_at = NOW() WHERE plate = ?', 
+            {fee, plate})
+        exports['gypsy-core']:Emit('garage:vehicleImpounded', plate, fee)
         return true
+    end,
+    
+    --- Устанавливает состояние машины
+    SetVehicleState = function(plate, state, fee)
+        exports.oxmysql:execute('UPDATE gypsy_vehicles SET state = ?, impound_fee = ?, impounded_at = NOW() WHERE plate = ?', 
+            {state, fee or 0, plate})
+        return true
+    end,
+    
+    --- Получает машины по состоянию
+    GetVehiclesByState = function(citizenid, state)
+        local promise = promise.new()
+        exports.oxmysql:execute('SELECT * FROM gypsy_vehicles WHERE citizenid = ? AND state = ?', 
+            {citizenid, state}, function(result)
+            promise:resolve(result or {})
+        end)
+        return Citizen.Await(promise)
     end
 }
+
+-- ====================================================================================
+--                              DATABASE MIGRATION
+-- ====================================================================================
+
+CreateThread(function()
+    Wait(2000) -- Wait for DB connection
+    
+    -- Check and add impound_fee column
+    exports.oxmysql:execute('SHOW COLUMNS FROM gypsy_vehicles LIKE "impound_fee"', {}, function(result)
+        if not result or #result == 0 then
+            print('^3[Garage] Adding impound_fee column to gypsy_vehicles...^0')
+            exports.oxmysql:execute('ALTER TABLE gypsy_vehicles ADD COLUMN impound_fee INT DEFAULT 0', {})
+        end
+    end)
+    
+    -- Check and add impounded_at column
+    exports.oxmysql:execute('SHOW COLUMNS FROM gypsy_vehicles LIKE "impounded_at"', {}, function(result)
+        if not result or #result == 0 then
+            print('^3[Garage] Adding impounded_at column to gypsy_vehicles...^0')
+            exports.oxmysql:execute('ALTER TABLE gypsy_vehicles ADD COLUMN impounded_at TIMESTAMP NULL DEFAULT NULL', {})
+        end
+    end)
+end)
 
 -- Регистрируем сервис в ServiceLocator
 CreateThread(function()
