@@ -1,19 +1,13 @@
--- Pizza Delivery Job - Server
-print('^2[Pizza Delivery] Loading...^0')
+-- Cable TV Job - Server
+print('^2[Cable TV] Loading...^0')
 
--- Состояние работников
-local ActiveWorkers = {}  -- {source = {vehicle, deliveries, startTime, cooldown}}
+local ActiveWorkers = {}
 
 -- ====================================================================================
 --                              HELPER FUNCTIONS
 -- ====================================================================================
 
---- Проверка доступности смены
---- @param source number
---- @return boolean canStart
---- @return number timeLeft (seconds)
 local function CanStartShift(source)
-    -- Проверка отката
     if ActiveWorkers[source] and ActiveWorkers[source].cooldown then
         local timeLeft = ActiveWorkers[source].cooldown - os.time()
         if timeLeft > 0 then
@@ -21,7 +15,6 @@ local function CanStartShift(source)
         end
     end
     
-    -- Проверка лимита фургонов
     local activeCount = 0
     for _, worker in pairs(ActiveWorkers) do
         if worker.vehicle then
@@ -40,17 +33,15 @@ end
 --                                  EVENTS
 -- ====================================================================================
 
---- Начать смену
-RegisterNetEvent('pizza:server:startShift')
-AddEventHandler('pizza:server:startShift', function()
+RegisterNetEvent('cabletv:server:startShift')
+AddEventHandler('cabletv:server:startShift', function()
     local src = source
     local canStart, timeLeft = CanStartShift(src)
     
     if not canStart then
         if timeLeft > 0 then
-            local minutes = math.ceil(timeLeft / 60)
             TriggerClientEvent('gypsy-notifications:client:notify', src, {
-                message = string.format('Откат: %d мин', minutes),
+                message = string.format('Откат: %d мин', math.ceil(timeLeft / 60)),
                 type = 'error'
             })
         else
@@ -62,75 +53,67 @@ AddEventHandler('pizza:server:startShift', function()
         return
     end
     
-    -- Спавн фургона на клиенте
-    TriggerClientEvent('pizza:client:spawnVehicle', src)
-    
-    print('^2[Pizza Delivery] ' .. GetPlayerName(src) .. ' started shift^0')
+    TriggerClientEvent('cabletv:client:spawnVehicle', src)
+    print('^2[Cable TV] ' .. GetPlayerName(src) .. ' started shift^0')
 end)
 
---- Фургон успешно заспавнен
-RegisterNetEvent('pizza:server:vehicleSpawned')
-AddEventHandler('pizza:server:vehicleSpawned', function(netId)
+RegisterNetEvent('cabletv:server:vehicleSpawned')
+AddEventHandler('cabletv:server:vehicleSpawned', function(netId)
     local src = source
     
     ActiveWorkers[src] = {
         vehicle = netId,
-        deliveries = 0,
+        installs = 0,
         startTime = os.time(),
         cooldown = nil
     }
     
-    -- Дать первый заказ
-    TriggerClientEvent('pizza:client:newDelivery', src, 1)
+    TriggerClientEvent('cabletv:client:newInstall', src, 1)
     
     TriggerClientEvent('gypsy-notifications:client:notify', src, {
-        message = 'Смена началась! Доставьте 5 пицц',
+        message = 'Смена началась! Установите 5 антенн',
         type = 'success',
         duration = 5000
     })
 end)
 
---- Доставка завершена
-RegisterNetEvent('pizza:server:deliveryComplete')
-AddEventHandler('pizza:server:deliveryComplete', function(distance, timeSpent)
+RegisterNetEvent('cabletv:server:installComplete')
+AddEventHandler('cabletv:server:installComplete', function(distance, successCount)
     local src = source
     local Player = exports['gypsy-core']:GetPlayer(src)
     if not Player or not ActiveWorkers[src] then return end
     
     -- Расчёт оплаты
-    local payment = math.floor(distance * Config.Payment.BaseRate)
+    local basePayment = math.floor(distance * Config.Payment.BaseRate)
+    local multiplier = Config.Payment.SuccessMultipliers[successCount] or 1.0
+    local payment = math.floor(basePayment * multiplier)
     
-    -- Бонус за скорость (если доставка < 3 минут)
-    local bonusApplied = false
-    if timeSpent < Config.Job.SpeedBonusTime then
-        payment = math.floor(payment * (1 + Config.Payment.SpeedBonus))
-        bonusApplied = true
-    end
+    Player.Functions.AddMoney('cash', payment, 'cabletv-install')
     
-    -- Выплата
-    Player.Functions.AddMoney('cash', payment, 'pizza-delivery')
-    
-    -- Увеличить счётчик
-    ActiveWorkers[src].deliveries = ActiveWorkers[src].deliveries + 1
+    ActiveWorkers[src].installs = ActiveWorkers[src].installs + 1
     
     -- Уведомление
-    local bonusText = bonusApplied and ' (⚡ бонус!)' or ''
+    local qualityText = ""
+    if successCount == 3 then qualityText = " (⭐ Отлично!)"
+    elseif successCount == 2 then qualityText = " (👍 Хорошо)"
+    elseif successCount == 1 then qualityText = " (✓ Нормально)"
+    else qualityText = " (❌ Плохо)" end
+    
     TriggerClientEvent('gypsy-notifications:client:notify', src, {
-        message = string.format('Доставка %d/5: +$%d%s', ActiveWorkers[src].deliveries, payment, bonusText),
+        message = string.format('Установка %d/5: +$%d%s', ActiveWorkers[src].installs, payment, qualityText),
         type = 'success'
     })
     
-    print(string.format('^2[Pizza Delivery] %s completed delivery %d/5: $%d (%.0fm, %.0fs)^0', 
-        GetPlayerName(src), ActiveWorkers[src].deliveries, payment, distance, timeSpent))
+    print(string.format('^2[Cable TV] %s completed install %d/5: $%d (%d/3 success)^0', 
+        GetPlayerName(src), ActiveWorkers[src].installs, payment, successCount))
     
     -- Проверка завершения смены
-    if ActiveWorkers[src].deliveries >= Config.Job.DeliveriesPerShift then
+    if ActiveWorkers[src].installs >= Config.Job.InstallsPerShift then
         -- Установить откат (конвертируем минуты в секунды)
         ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
         ActiveWorkers[src].vehicle = nil
         
-        -- Удалить фургон на клиенте
-        TriggerClientEvent('pizza:client:endShift', src)
+        TriggerClientEvent('cabletv:client:endShift', src)
         
         TriggerClientEvent('gypsy-notifications:client:notify', src, {
             message = 'Смена завершена! Откат 30 минут',
@@ -138,9 +121,8 @@ AddEventHandler('pizza:server:deliveryComplete', function(distance, timeSpent)
             duration = 5000
         })
         
-        print('^2[Pizza Delivery] ' .. GetPlayerName(src) .. ' completed shift^0')
+        print('^2[Cable TV] ' .. GetPlayerName(src) .. ' completed shift^0')
     else
-        -- Уведомление о возврате на базу
         TriggerClientEvent('gypsy-notifications:client:notify', src, {
             message = 'Вернитесь на базу за следующим заказом',
             type = 'info',
@@ -149,34 +131,25 @@ AddEventHandler('pizza:server:deliveryComplete', function(distance, timeSpent)
     end
 end)
 
---- Запрос следующего заказа (на базе)
-RegisterNetEvent('pizza:server:requestNextOrder')
-AddEventHandler('pizza:server:requestNextOrder', function()
+RegisterNetEvent('cabletv:server:requestNextOrder')
+AddEventHandler('cabletv:server:requestNextOrder', function()
     local src = source
     if not ActiveWorkers[src] or not ActiveWorkers[src].vehicle then return end
     
-    -- Проверка что не превышен лимит
-    if ActiveWorkers[src].deliveries >= Config.Job.DeliveriesPerShift then
-        TriggerClientEvent('gypsy-notifications:client:notify', src, {
-            message = 'Смена завершена',
-            type = 'error'
-        })
+    if ActiveWorkers[src].installs >= Config.Job.InstallsPerShift then
         return
     end
     
-    -- Дать следующий заказ
-    TriggerClientEvent('pizza:client:newDelivery', src, ActiveWorkers[src].deliveries + 1)
+    TriggerClientEvent('cabletv:client:newInstall', src, ActiveWorkers[src].installs + 1)
 end)
 
---- Фургон уничтожен
-RegisterNetEvent('pizza:server:vehicleDestroyed')
-AddEventHandler('pizza:server:vehicleDestroyed', function()
+RegisterNetEvent('cabletv:server:vehicleDestroyed')
+AddEventHandler('cabletv:server:vehicleDestroyed', function()
     local src = source
     local Player = exports['gypsy-core']:GetPlayer(src)
     if not Player or not ActiveWorkers[src] then return end
     
-    -- Штраф
-    Player.Functions.RemoveMoney('cash', Config.Payment.VehicleDestroyFine, 'pizza-vehicle-destroyed')
+    Player.Functions.RemoveMoney('cash', Config.Payment.VehicleDestroyFine, 'cabletv-vehicle-destroyed')
     
     -- Установить откат (конвертируем минуты в секунды)
     ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
@@ -188,10 +161,9 @@ AddEventHandler('pizza:server:vehicleDestroyed', function()
         duration = 5000
     })
     
-    print('^1[Pizza Delivery] ' .. GetPlayerName(src) .. ' destroyed vehicle - fined $' .. Config.Payment.VehicleDestroyFine .. '^0')
+    print('^1[Cable TV] ' .. GetPlayerName(src) .. ' destroyed vehicle - fined $' .. Config.Payment.VehicleDestroyFine .. '^0')
 end)
 
---- Игрок отключился
 AddEventHandler('playerDropped', function()
     local src = source
     if ActiveWorkers[src] then
@@ -199,4 +171,4 @@ AddEventHandler('playerDropped', function()
     end
 end)
 
-print('^2[Pizza Delivery] Server loaded^0')
+print('^2[Cable TV] Server loaded^0')
