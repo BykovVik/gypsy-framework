@@ -35,3 +35,31 @@ RegisterCommand('time', function(source)
         })
     end
 end)
+
+-- ====================================================================================
+--                              WEATHER SERVICE
+-- ====================================================================================
+
+local WeatherService = {
+    version = '1.0.0',
+    
+    --- Получить текущий час игрового времени
+    GetCurrentHour = function()
+        return CurrentHour
+    end,
+    
+    --- Получить текущую минуту игрового времени
+    GetCurrentMinute = function()
+        return CurrentMinute
+    end
+}
+
+-- Регистрируем сервис в ServiceLocator
+CreateThread(function()
+    Wait(1000) -- Ждём загрузки gypsy-core
+    exports['gypsy-core']:RegisterService('Weather', WeatherService, {
+        version = '1.0.0',
+        description = 'Gypsy Weather System'
+    })
+    print('^2[Weather] Service registered in ServiceLocator^0')
+end)
