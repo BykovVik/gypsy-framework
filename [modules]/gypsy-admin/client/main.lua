@@ -197,3 +197,28 @@ RegisterNetEvent('gypsy-admin:client:spawnVehicle', function(model)
     print('[Admin] Spawned vehicle: ' .. model)
     TriggerEvent('chat:addMessage', { args = { '^2SYSTEM', 'Spawned vehicle: ' .. model } })
 end)
+
+-- Показать координаты
+RegisterNetEvent('gypsy-admin:client:showCoords', function()
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    
+    local coordsStr = string.format('vector3(%.2f, %.2f, %.2f)', coords.x, coords.y, coords.z)
+    local headingStr = string.format('Heading: %.2f', heading)
+    
+    print('^2[Coords] ' .. coordsStr .. ' | ' .. headingStr .. '^0')
+    
+    TriggerEvent('chat:addMessage', {
+        args = {
+            '^2Coords',
+            coordsStr .. ' | ' .. headingStr
+        }
+    })
+    
+    -- Копирование в буфер обмена (если поддерживается)
+    SendNUIMessage({
+        type = "copy",
+        data = coordsStr
+    })
+end)

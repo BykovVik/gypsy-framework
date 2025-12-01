@@ -75,7 +75,7 @@ Config.InstallPoints = {
     
     -- Vespucci (набережная, парковки)
     {coords = vector3(-1183.0, -1561.0, 4.4), label = "Vespucci Beach"},
-    {coords = vector3(-1305.0, -1267.0, 4.6), label = "Beach Parking"},
+    {coords = vector3(-1304.37, -1261.37, 4.6), label = "Beach Parking"}, --исправлено
     {coords = vector3(-1457.0, -503.0, 32.8), label = "Del Perro"},
     
     -- Grove Street / Davis

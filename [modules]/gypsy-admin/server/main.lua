@@ -137,6 +137,21 @@ RegisterCommand('car', function(source, args)
     TriggerClientEvent('gypsy-admin:client:spawnVehicle', source, model)
 end)
 
+-- Команда для получения координат
+RegisterCommand('coords', function(source, args)
+    if source == 0 then
+        print('[Admin] Cannot get coords from console')
+        return
+    end
+
+    if not IsAdmin(source) then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'You do not have permission.' } })
+        return
+    end
+
+    TriggerClientEvent('gypsy-admin:client:showCoords', source)
+end)
+
 -- ====================================================================================
 --                              ADMIN SERVICE
 -- ====================================================================================
