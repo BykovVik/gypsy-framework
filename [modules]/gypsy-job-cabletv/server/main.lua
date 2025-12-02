@@ -65,7 +65,9 @@ AddEventHandler('cabletv:server:vehicleSpawned', function(netId)
         vehicle = netId,
         installs = 0,
         startTime = os.time(),
-        cooldown = nil
+        cooldown = nil,
+        accumulatedMoney = 0, -- Накопленные деньги
+        hasActiveOrder = true -- Сразу даем заказ
     }
     
     TriggerClientEvent('cabletv:client:newInstall', src, 1)
@@ -83,14 +85,14 @@ AddEventHandler('cabletv:server:installComplete', function(distance, successCoun
     local Player = exports['gypsy-core']:GetPlayer(src)
     if not Player or not ActiveWorkers[src] then return end
     
-    -- Расчёт оплаты
+    -- Расчёт оплаты (накопление)
     local basePayment = math.floor(distance * Config.Payment.BaseRate)
     local multiplier = Config.Payment.SuccessMultipliers[successCount] or 1.0
     local payment = math.floor(basePayment * multiplier)
     
-    Player.Functions.AddMoney('cash', payment, 'cabletv-install')
-    
+    ActiveWorkers[src].accumulatedMoney = ActiveWorkers[src].accumulatedMoney + payment
     ActiveWorkers[src].installs = ActiveWorkers[src].installs + 1
+    ActiveWorkers[src].hasActiveOrder = false
     
     -- Уведомление
     local qualityText = ""
@@ -100,31 +102,23 @@ AddEventHandler('cabletv:server:installComplete', function(distance, successCoun
     else qualityText = " (❌ Плохо)" end
     
     TriggerClientEvent('gypsy-notifications:client:notify', src, {
-        message = string.format('Установка %d/5: +$%d%s', ActiveWorkers[src].installs, payment, qualityText),
+        message = string.format('Заработано: +$%d%s (Всего: $%d)', payment, qualityText, ActiveWorkers[src].accumulatedMoney),
         type = 'success'
     })
     
-    print(string.format('^2[Cable TV] %s completed install %d/5: $%d (%d/3 success)^0', 
-        GetPlayerName(src), ActiveWorkers[src].installs, payment, successCount))
+    print(string.format('^2[Cable TV] %s completed install %d/5: +$%d (Total: $%d)^0', 
+        GetPlayerName(src), ActiveWorkers[src].installs, payment, ActiveWorkers[src].accumulatedMoney))
     
-    -- Проверка завершения смены
+    -- Проверка лимита установок (просто уведомляем)
     if ActiveWorkers[src].installs >= Config.Job.InstallsPerShift then
-        -- Установить откат (конвертируем минуты в секунды)
-        ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
-        ActiveWorkers[src].vehicle = nil
-        
-        TriggerClientEvent('cabletv:client:endShift', src)
-        
         TriggerClientEvent('gypsy-notifications:client:notify', src, {
-            message = 'Смена завершена! Откат 30 минут',
+            message = 'План выполнен! Вернитесь на базу за расчетом.',
             type = 'info',
             duration = 5000
         })
-        
-        print('^2[Cable TV] ' .. GetPlayerName(src) .. ' completed shift^0')
     else
         TriggerClientEvent('gypsy-notifications:client:notify', src, {
-            message = 'Вернитесь на базу за следующим заказом',
+            message = 'Вернитесь на базу за следующим заказом или расчетом',
             type = 'info',
             duration = 4000
         })
@@ -136,11 +130,80 @@ AddEventHandler('cabletv:server:requestNextOrder', function()
     local src = source
     if not ActiveWorkers[src] or not ActiveWorkers[src].vehicle then return end
     
-    if ActiveWorkers[src].installs >= Config.Job.InstallsPerShift then
+    if ActiveWorkers[src].hasActiveOrder then
+        TriggerClientEvent('gypsy-notifications:client:notify', src, {
+            message = 'У вас уже есть активный заказ!',
+            type = 'error'
+        })
         return
     end
     
+    if ActiveWorkers[src].installs >= Config.Job.InstallsPerShift then
+        TriggerClientEvent('gypsy-notifications:client:notify', src, {
+            message = 'Лимит заказов на смену исчерпан. Сдайте смену.',
+            type = 'error'
+        })
+        return
+    end
+    
+    ActiveWorkers[src].hasActiveOrder = true
     TriggerClientEvent('cabletv:client:newInstall', src, ActiveWorkers[src].installs + 1)
+end)
+
+RegisterNetEvent('cabletv:server:finishShift')
+AddEventHandler('cabletv:server:finishShift', function()
+    local src = source
+    if not ActiveWorkers[src] then return end
+    
+    -- Нельзя закончить с активным заказом
+    if ActiveWorkers[src].hasActiveOrder then
+        TriggerClientEvent('gypsy-notifications:client:notify', src, {
+            message = 'Сначала завершите текущий заказ!',
+            type = 'error'
+        })
+        return
+    end
+    
+    local payout = ActiveWorkers[src].accumulatedMoney
+    local Player = exports['gypsy-core']:GetPlayer(src)
+    
+    if Player and payout > 0 then
+        Player.Functions.AddMoney('cash', payout, 'cabletv-salary')
+    end
+    
+    -- Установить откат и очистить статус работы
+    ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
+    ActiveWorkers[src].vehicle = nil
+    ActiveWorkers[src].installs = 0
+    ActiveWorkers[src].accumulatedMoney = 0
+    ActiveWorkers[src].hasActiveOrder = false
+    
+    TriggerClientEvent('cabletv:client:endShift', src)
+    TriggerClientEvent('gypsy-notifications:client:notify', src, {
+        message = string.format('Смена закончена. Выплачено: $%d', payout),
+        type = 'success'
+    })
+end)
+
+RegisterNetEvent('cabletv:server:emergencyFinish')
+AddEventHandler('cabletv:server:emergencyFinish', function()
+    local src = source
+    if not ActiveWorkers[src] then return end
+    
+    -- Экстренное завершение: без выплат, установка отката
+    ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
+    ActiveWorkers[src].vehicle = nil
+    ActiveWorkers[src].installs = 0
+    ActiveWorkers[src].accumulatedMoney = 0
+    ActiveWorkers[src].hasActiveOrder = false
+    
+    TriggerClientEvent('cabletv:client:endShift', src)
+    TriggerClientEvent('gypsy-notifications:client:notify', src, {
+        message = 'Экстренное завершение смены. Выплаты аннулированы.',
+        type = 'error'
+    })
+    
+    print('^1[Cable TV] ' .. GetPlayerName(src) .. ' performed emergency finish^0')
 end)
 
 RegisterNetEvent('cabletv:server:vehicleDestroyed')

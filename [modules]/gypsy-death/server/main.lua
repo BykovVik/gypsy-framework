@@ -4,7 +4,8 @@ local Gypsy = exports['gypsy-core']:GetCoreObject()
 --                              DEATH SERVICE
 -- ====================================================================================
 
-local DeathService = {
+local DeathService
+DeathService = {
     version = '1.0.0',
     deadPlayers = {}, -- Хранит состояние мертвых игроков
     

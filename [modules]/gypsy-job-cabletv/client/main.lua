@@ -22,42 +22,60 @@ CreateThread(function()
     EndTextCommandSetBlipName(blip)
 end)
 
--- Маркер базы
+-- NPC и взаимодействие
+local npcEntity = nil
+
 CreateThread(function()
-    while true do
-        Wait(0)
+    if not Config.NPC then return end
+
+    local model = GetHashKey(Config.NPC.model)
+    RequestModel(model)
+    while not HasModelLoaded(model) do 
+        Wait(10) 
+    end
+    
+    npcEntity = CreatePed(4, model, Config.NPC.coords.x, Config.NPC.coords.y, Config.NPC.coords.z - 1.0, Config.NPC.heading, false, true)
+    
+    if DoesEntityExist(npcEntity) then
+        SetEntityInvincible(npcEntity, true)
+        FreezeEntityPosition(npcEntity, true)
+        SetBlockingOfNonTemporaryEvents(npcEntity, true)
+        SetPedDiesWhenInjured(npcEntity, false)
+        SetPedCanPlayAmbientAnims(npcEntity, false)
+        SetPedCanRagdollFromPlayerImpact(npcEntity, false)
+        SetEntityCanBeDamaged(npcEntity, false)
+        SetPedFleeAttributes(npcEntity, 0, 0)
+        SetPedCombatAttributes(npcEntity, 17, 1)
+        SetPedAlertness(npcEntity, 0)
         
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local distance = #(coords - Config.Base.coords)
-        
-        if distance < 10.0 then
-            DrawMarker(1, Config.Base.coords.x, Config.Base.coords.y, Config.Base.coords.z - 1.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.0,
-                0, 100, 255, 100, false, true, 2, false, nil, nil, false)
-            
-            if distance < 2.0 then
-                if not isOnShift then
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Начать смену")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        TriggerServerEvent('cabletv:server:startShift')
-                    end
-                elseif isOnShift and not currentInstall then
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Взять следующий заказ")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        TriggerServerEvent('cabletv:server:requestNextOrder')
-                    end
-                end
-            end
-        else
-            Wait(500)
-        end
+        exports['gypsy-interact']:AddTargetModel(model, {
+            {
+                label = "Начать смену / Взять заказ",
+                icon = "fas fa-tv",
+                event = "cabletv:client:interactStartOrNext"
+            },
+            {
+                label = "Закончить смену (Получить расчет)",
+                icon = "fas fa-money-bill-wave",
+                serverEvent = "cabletv:server:finishShift"
+            },
+            {
+                label = "Экстренное завершение (Без выплат)",
+                icon = "fas fa-exclamation-triangle",
+                serverEvent = "cabletv:server:emergencyFinish"
+            }
+        })
+    end
+end)
+
+RegisterNetEvent('cabletv:client:interactStartOrNext')
+AddEventHandler('cabletv:client:interactStartOrNext', function()
+    if not isOnShift then
+        TriggerServerEvent('cabletv:server:startShift')
+    elseif isOnShift and not currentInstall then
+        TriggerServerEvent('cabletv:server:requestNextOrder')
+    else
+        exports['gypsy-notifications']:Notify('У вас уже есть активный заказ!', 'error')
     end
 end)
 
