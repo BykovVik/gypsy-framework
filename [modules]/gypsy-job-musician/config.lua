@@ -9,8 +9,15 @@ Config.Performance = {
     TipInterval = 15,           -- Чаевые каждые X секунд
     MinTip = 5,                 -- Минимум чаевых
     MaxTip = 30,                -- Максимум чаевых
+    TipInterval = 15,           -- Чаевые каждые X секунд
+    MinTip = 5,                 -- Минимум чаевых
+    MaxTip = 30,                -- Максимум чаевых
     CooldownMinutes = 30        -- Откат после выступления (минуты)
 }
+
+-- Модель микрофонной стойки (маркер работы)
+Config.MicProp = "prop_speaker_03"
+Config.PropHeadingOffset = 180.0 -- Смещение поворота пропа (если он смотрит не туда)
 
 -- ====================================================================================
 --                              ЛОКАЦИИ ВЫСТУПЛЕНИЙ
@@ -19,7 +26,8 @@ Config.Performance = {
 Config.Locations = {
     -- Vespucci Beach (прямо на песке у променада)
     {
-        coords = vector3(-1282.0, -1266.0, 4.0),
+        coords = vector3(-1325.78, -1308.48, 4.84),
+        heading = 110.0,   -- Направление взгляда (градусы)
         label = "Vespucci Beach",
         multiplier = 1.5,  -- +50% чаевых (туристы)
         blip = {
@@ -29,9 +37,10 @@ Config.Locations = {
         }
     },
     
-    -- Del Perro Beach (променад у пирса)
+    -- Del Perro Beach (Ликерный магазин)
     {
-        coords = vector3(-1652.0, -1037.0, 13.0),
+        coords = vector3(-1230.32, -903.74, 12.15),
+        heading = 35.0,
         label = "Del Perro Pier",
         multiplier = 1.4,  -- +40% чаевых
         blip = {
@@ -43,21 +52,10 @@ Config.Locations = {
     
     -- Legion Square (центр города, у фонтана)
     {
-        coords = vector3(195.0, -933.0, 30.7),
+        coords = vector3(222.15, -959.27, 29.28),
+        heading = 320.0,
         label = "Legion Square",
         multiplier = 1.0,  -- Обычные чаевые
-        blip = {
-            sprite = 136,
-            color = 27,
-            scale = 0.7
-        }
-    },
-    
-    -- Grove Street (улица)
-    {
-        coords = vector3(127.0, -1930.0, 21.4),
-        label = "Grove Street",
-        multiplier = 0.8,  -- -20% чаевых (бедный район)
         blip = {
             sprite = 136,
             color = 27,

@@ -7,6 +7,8 @@ local instrumentProp = nil
 local performanceStartTime = 0
 local tipTimer = 0
 
+local spawnedProps = {}
+
 -- Очистка при перезагрузке ресурса
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
@@ -14,6 +16,13 @@ AddEventHandler('onResourceStop', function(resourceName)
     -- Удалить инструмент если есть
     if instrumentProp and DoesEntityExist(instrumentProp) then
         DeleteObject(instrumentProp)
+    end
+    
+    -- Удалить пропы микрофонов
+    for k, v in pairs(spawnedProps) do
+        if DoesEntityExist(v) then
+            DeleteObject(v)
+        end
     end
     
     -- Очистить анимацию
@@ -35,8 +44,9 @@ CreateThread(function()
         SetBlipColour(blip, location.blip.color)
         SetBlipScale(blip, location.blip.scale)
         SetBlipAsShortRange(blip, true)
+        
         BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString("🎸 " .. location.label)
+        AddTextComponentString("Уличный музыкант") -- Одинаковое имя для группировки
         EndTextCommandSetBlipName(blip)
     end
     
@@ -44,11 +54,49 @@ CreateThread(function()
 end)
 
 -- ====================================================================================
---                              LOCATION MARKERS
+--                              LOCATION MARKERS & PROPS
 -- ====================================================================================
 
 local selectedInstrument = nil
 
+CreateThread(function()
+    local micModel = GetHashKey(Config.MicProp)
+    RequestModel(micModel)
+    while not HasModelLoaded(micModel) do
+        Wait(10)
+    end
+
+    while true do
+        Wait(1000) -- Проверка дистанции раз в секунду для оптимизации
+        
+        local ped = PlayerPedId()
+        local coords = GetEntityCoords(ped)
+        
+        for i, location in ipairs(Config.Locations) do
+            local distance = #(coords - location.coords)
+            
+            -- Спавн/удаление пропа
+            if distance < 50.0 then
+                if not spawnedProps[i] or not DoesEntityExist(spawnedProps[i]) then
+                    local prop = CreateObject(micModel, location.coords.x, location.coords.y, location.coords.z - 1.0, false, false, false)
+                    SetEntityHeading(prop, (location.heading or 0.0) + Config.PropHeadingOffset)
+                    PlaceObjectOnGroundProperly(prop)
+                    FreezeEntityPosition(prop, true)
+                    spawnedProps[i] = prop
+                end
+            else
+                if spawnedProps[i] then
+                    if DoesEntityExist(spawnedProps[i]) then
+                        DeleteObject(spawnedProps[i])
+                    end
+                    spawnedProps[i] = nil
+                end
+            end
+        end
+    end
+end)
+
+-- Отдельный поток для взаимодействия (быстрый цикл)
 CreateThread(function()
     while true do
         Wait(0)
@@ -60,20 +108,13 @@ CreateThread(function()
             for i, location in ipairs(Config.Locations) do
                 local distance = #(coords - location.coords)
                 
-                if distance < 10.0 then
-                    -- Маркер
-                    DrawMarker(1, location.coords.x, location.coords.y, location.coords.z - 1.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.0,
-                        138, 43, 226, 100, false, true, 2, false, nil, nil, false)
+                if distance < 2.0 then
+                    SetTextComponentFormat("STRING")
+                    AddTextComponentString("~INPUT_CONTEXT~ Выбрать инструмент")
+                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
                     
-                    if distance < 2.0 then
-                        SetTextComponentFormat("STRING")
-                        AddTextComponentString("~INPUT_CONTEXT~ Выбрать инструмент")
-                        DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                        
-                        if IsControlJustReleased(0, 38) then
-                            ShowInstrumentMenu(i)
-                        end
+                    if IsControlJustReleased(0, 38) then
+                        ShowInstrumentMenu(i)
                     end
                 end
             end
@@ -142,7 +183,33 @@ AddEventHandler('musician:client:startPerformance', function(locationIndex)
     
     -- Телепортировать к точке и заморозить
     local ped = PlayerPedId()
-    SetEntityCoords(ped, location.coords.x, location.coords.y, location.coords.z)
+    
+    -- Рассчитать позицию игрока (сбоку от колонки)
+    -- Смещение: 1.6 метра вправо от направления взгляда (было 0.8)
+    local heading = location.heading or 0.0
+    local rad = math.rad(heading)
+    
+    -- В GTA: Heading 0 = +Y (North). 90 = -X (West). 
+    -- Forward Vector: (-sin(H), cos(H))
+    -- Right Vector: (cos(H), sin(H))
+    
+    local forwardX = -math.sin(rad)
+    local forwardY = math.cos(rad)
+    local rightX = forwardY
+    local rightY = -forwardX
+    
+    -- Позиция игрока = Позиция пропа + (Right * 1.6)
+    local playerX = location.coords.x + (rightX * 1.6)
+    local playerY = location.coords.y + (rightY * 1.6)
+    
+    -- Установить координаты с правильной высотой земли
+    SetEntityCoordsNoOffset(ped, playerX, playerY, location.coords.z, false, false, false)
+    SetEntityHeading(ped, heading)
+    
+    -- Подождать пока персонаж приземлится
+    Wait(100)
+    PlaceObjectOnGroundProperly(ped)
+    
     FreezeEntityPosition(ped, true)
     
     -- Создать инструмент и анимацию
@@ -212,9 +279,9 @@ function StartPlaying()
         instrument.rotation.x, instrument.rotation.y, instrument.rotation.z,
         true, true, false, true, 1, true)
     
-    -- Анимация
+    -- Анимация (флаг 49 = ANIM_FLAG_REPEAT | ANIM_FLAG_UPPERBODY - ноги на земле)
     TaskPlayAnim(ped, instrument.animDict, instrument.animName,
-        8.0, -8.0, -1, 1, 0, false, false, false)
+        8.0, -8.0, -1, 49, 0, false, false, false)
 end
 
 function StopPerformance(completed)
