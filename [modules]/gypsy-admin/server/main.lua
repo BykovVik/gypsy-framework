@@ -1,8 +1,14 @@
 local Gypsy = exports['gypsy-core']:GetCoreObject()
 
 -- Helper to check admin permissions
+-- Проверяем несколько вариантов для максимальной совместимости:
+-- 1. Специфичный ACE для админских команд (gypsy.admin)
+-- 2. Общий ACE на команды (command)
+-- 3. Выполнение из консоли (source == 0)
 local function IsAdmin(source)
-    return IsPlayerAceAllowed(source, 'command')
+    return IsPlayerAceAllowed(source, 'gypsy.admin') or 
+           IsPlayerAceAllowed(source, 'command') or
+           source == 0  -- Консоль всегда имеет права
 end
 
 RegisterCommand('revive', function(source, args)

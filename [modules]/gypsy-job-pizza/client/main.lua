@@ -7,6 +7,8 @@ local currentVehicle = nil
 local currentDelivery = nil
 local deliveryBlip = nil
 local deliveryStartTime = 0
+local deliveriesDone = 0
+local currentDeliveryTimeLimit = 0  -- Динамическое время для текущей доставки
 
 -- ====================================================================================
 --                              INITIALIZATION
@@ -24,53 +26,115 @@ CreateThread(function()
     EndTextCommandSetBlipName(blip)
 end)
 
--- Маркер взаимодействия у базы (пиццерии)
+-- ====================================================================================
+--                              NPC & INTERACTION
+-- ====================================================================================
+
+local npcEntity = nil
+
+-- Спавн NPC
 CreateThread(function()
-    while true do
-        Wait(0)
+    print('^3[Pizza Job] Attempting to spawn NPC...^0')
+    if not Config.NPC then 
+        print('^1[Pizza Job] Config.NPC is missing!^0') 
+        return 
+    end
+
+    local model = GetHashKey(Config.NPC.model)
+    print('^3[Pizza Job] Requesting model: ' .. Config.NPC.model .. '^0')
+    
+    RequestModel(model)
+    local timeout = 0
+    while not HasModelLoaded(model) do 
+        Wait(10) 
+        timeout = timeout + 10
+        if timeout > 5000 then
+            print('^1[Pizza Job] Model load timeout!^0')
+            return
+        end
+    end
+    
+    print('^3[Pizza Job] Model loaded. Creating ped at: ' .. json.encode(Config.NPC.coords) .. '^0')
+    
+    npcEntity = CreatePed(4, model, Config.NPC.coords.x, Config.NPC.coords.y, Config.NPC.coords.z - 1.0, Config.NPC.heading, false, true)
+    
+    if DoesEntityExist(npcEntity) then
+        print('^2[Pizza Job] NPC Created successfully. ID: ' .. npcEntity .. '^0')
         
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local distance = #(coords - Config.Base.coords)
+        -- Оптимизация и настройка NPC
+        SetEntityInvincible(npcEntity, true) -- Бессмертие
+        FreezeEntityPosition(npcEntity, true) -- Заморозка позиции
+        SetBlockingOfNonTemporaryEvents(npcEntity, true) -- Игнорирование событий
+        SetPedDiesWhenInjured(npcEntity, false) -- Не умирать от ранений
+        SetPedCanPlayAmbientAnims(npcEntity, false) -- Отключить анимации ожидания
+        SetPedCanRagdollFromPlayerImpact(npcEntity, false) -- Не падать от толчков
+        SetEntityCanBeDamaged(npcEntity, false) -- Отключить урон
+        SetPedFleeAttributes(npcEntity, 0, 0) -- Не убегать
+        SetPedCombatAttributes(npcEntity, 17, 1) -- Игнорировать бой
+        SetPedAlertness(npcEntity, 0) -- Нулевая бдительность
         
-        if distance < 10.0 then
-            -- Показать маркер
-            DrawMarker(
-                1, -- Тип маркера (цилиндр)
-                Config.Base.coords.x,
-                Config.Base.coords.y,
-                Config.Base.coords.z - 1.0,
-                0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0,
-                1.5, 1.5, 1.0,
-                255, 165, 0, 100, -- Оранжевый
-                false, true, 2, false, nil, nil, false
-            )
-            
-            if distance < 2.0 then
-                if not isOnShift then
-                    -- Начать смену
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Начать смену доставки")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        TriggerServerEvent('pizza:server:startShift')
-                    end
-                elseif isOnShift and not currentDelivery then
-                    -- Взять следующий заказ
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Взять следующий заказ")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        TriggerServerEvent('pizza:server:requestNextOrder')
-                    end
-                end
+        -- Регистрация в gypsy-interact
+        print('^3[Pizza Job] Registering target...^0')
+        exports['gypsy-interact']:AddTargetModel(model, {
+            {
+                label = "Начать смену / Взять заказ",
+                icon = "fas fa-pizza-slice",
+                event = "pizza:client:interactStartOrNext"
+            },
+            {
+                label = "Закончить смену и получить оплату",
+                icon = "fas fa-money-bill-wave",
+                serverEvent = "pizza:server:finishShift"
+            },
+            {
+                label = "Прекратить работу",
+                icon = "fas fa-door-open",
+                event = "pizza:client:quitJob"
+            }
+        })
+        print('^2[Pizza Job] Target registered.^0')
+    else
+        print('^1[Pizza Job] Failed to create NPC entity!^0')
+    end
+end)
+
+-- Обработка "Начать смену / Взять заказ"
+RegisterNetEvent('pizza:client:interactStartOrNext')
+AddEventHandler('pizza:client:interactStartOrNext', function()
+    if not isOnShift then
+        TriggerServerEvent('pizza:server:startShift')
+    else
+        if deliveriesDone < Config.Job.DeliveriesPerShift then
+            if not currentDelivery then
+                TriggerServerEvent('pizza:server:requestNextOrder')
+            else
+                exports['gypsy-notifications']:Notify('У вас уже есть активный заказ!', 'error')
             end
         else
-            Wait(500)
+            exports['gypsy-notifications']:Notify('Лимит доставок исчерпан. Сдайте смену.', 'warning')
         end
+    end
+end)
+
+-- Обработка "Прекратить работу"
+RegisterNetEvent('pizza:client:quitJob')
+AddEventHandler('pizza:client:quitJob', function()
+    if isOnShift then
+        -- Просто сбрасываем состояние, сервер сам разберется при следующем логине или через таймаут
+        -- Но лучше уведомить сервер
+        TriggerServerEvent('pizza:server:quitJob') -- Нужно добавить на сервер
+        
+        if currentVehicle and DoesEntityExist(currentVehicle) then
+            DeleteVehicle(currentVehicle)
+        end
+        currentVehicle = nil
+        isOnShift = false
+        currentDelivery = nil
+        if deliveryBlip then RemoveBlip(deliveryBlip) deliveryBlip = nil end
+        
+        exports['gypsy-notifications']:Notify('Вы уволились с работы.', 'info')
+    else
+        exports['gypsy-notifications']:Notify('Вы не работаете.', 'error')
     end
 end)
 
@@ -125,6 +189,7 @@ AddEventHandler('pizza:client:spawnVehicle', function()
     
     currentVehicle = vehicle
     isOnShift = true
+    deliveriesDone = 0
     
     -- Отправить netId на сервер
     local netId = NetworkGetNetworkIdFromEntity(vehicle)
@@ -136,10 +201,10 @@ end)
 
 --- Новая доставка
 RegisterNetEvent('pizza:client:newDelivery')
-AddEventHandler('pizza:client:newDelivery', function(deliveryNum)
-    -- Случайная точка доставки
-    local point = Config.DeliveryPoints[math.random(#Config.DeliveryPoints)]
-    currentDelivery = point
+AddEventHandler('pizza:client:newDelivery', function(deliveryNum, deliveryPoint, deliveryTime)
+    -- Получаем точку доставки и время от сервера
+    currentDelivery = deliveryPoint
+    currentDeliveryTimeLimit = deliveryTime
     deliveryStartTime = GetGameTimer()
     
     -- Убрать старый блип
@@ -148,7 +213,7 @@ AddEventHandler('pizza:client:newDelivery', function(deliveryNum)
     end
     
     -- Создать блип доставки
-    deliveryBlip = AddBlipForCoord(point)
+    deliveryBlip = AddBlipForCoord(currentDelivery)
     SetBlipSprite(deliveryBlip, 1)  -- Marker
     SetBlipColour(deliveryBlip, 5)  -- Yellow
     SetBlipScale(deliveryBlip, 0.8)
@@ -158,10 +223,21 @@ AddEventHandler('pizza:client:newDelivery', function(deliveryNum)
     AddTextComponentString("Доставка пиццы")
     EndTextCommandSetBlipName(deliveryBlip)
     
+    -- Показать таймер с динамическим временем
+    SendNUIMessage({
+        action = 'showTimer',
+        duration = currentDeliveryTimeLimit
+    })
+    
+    -- Форматируем время для уведомления
+    local minutes = math.floor(currentDeliveryTimeLimit / 60)
+    local seconds = currentDeliveryTimeLimit % 60
+    local distance = math.floor(#(Config.Pizzeria.coords - currentDelivery))
+    
     exports['gypsy-notifications']:Notify(
-        string.format('Новый заказ #%d! Доставьте пиццу по адресу', deliveryNum),
+        string.format('Заказ #%d! Доставьте за %d:%02d (~%dм)', deliveryNum, minutes, seconds, distance),
         'info',
-        4000
+        5000
     )
 end)
 
@@ -200,17 +276,28 @@ CreateThread(function()
                 -- Нажатие E
                 if IsControlJustReleased(0, 38) then -- E key
                     local timeSpent = (GetGameTimer() - deliveryStartTime) / 1000
-                    local totalDistance = #(Config.Base.coords - currentDelivery)
+                    local totalDistance = #(Config.NPC.coords - currentDelivery)
                     
-                    TriggerServerEvent('pizza:server:deliveryComplete', totalDistance, timeSpent)
+                    -- Получить процент оставшегося времени (используем динамическое время)
+                    local timePercentage = 100
+                    if currentDeliveryTimeLimit > 0 then
+                        local timeRemaining = currentDeliveryTimeLimit - timeSpent
+                        timePercentage = math.max(0, (timeRemaining / currentDeliveryTimeLimit) * 100)
+                    end
                     
-                    -- Убрать блип
+                    TriggerServerEvent('pizza:server:deliveryComplete', totalDistance, timeSpent, timePercentage)
+                    
+                    -- Убрать блип и таймер
                     if deliveryBlip then
                         RemoveBlip(deliveryBlip)
                         deliveryBlip = nil
                     end
                     
+                    SendNUIMessage({ action = 'hideTimer' })
+                    
                     currentDelivery = nil
+                    currentDeliveryTimeLimit = 0
+                    deliveriesDone = deliveriesDone + 1
                 end
             end
         else

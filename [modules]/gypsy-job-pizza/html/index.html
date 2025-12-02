@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Timer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="pizza-timer" class="timer-container hidden">
+        <div class="timer-circle">
+            <svg class="timer-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ff6b35" />
+                        <stop offset="100%" stop-color="#f7931e" />
+                    </linearGradient>
+                </defs>
+                <!-- Background circle -->
+                <circle class="timer-bg" cx="100" cy="100" r="90"></circle>
+                <!-- Progress circle -->
+                <circle class="timer-progress" cx="100" cy="100" r="90"></circle>
+            </svg>
+            <div class="timer-content">
+                <img src="pizza.svg" alt="Pizza" class="timer-pizza-img">
+                <div class="pizza-cover"></div>
+                <div class="timer-text">
+                    <span id="timer-minutes">5</span>:<span id="timer-seconds">00</span>
+                </div>
+                <!--<div class="timer-label">Доставка</div>-->
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
