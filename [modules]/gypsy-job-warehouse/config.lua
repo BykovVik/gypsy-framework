@@ -4,9 +4,9 @@ Config = {}
 --                              ЛОКАЦИИ
 -- ====================================================================================
 
--- Склад (тестовая локация - Legion Square)
+-- Склад 
 Config.Warehouse = {
-    coords = vector3(195.0, -933.0, 30.7),  -- Legion Square (центр города)
+    coords = vector3(2456.58, 1578.43, 33.20), 
     heading = 90.0,
     blip = {
         sprite = 478,  -- Warehouse icon
@@ -14,6 +14,13 @@ Config.Warehouse = {
         scale = 0.8,
         label = "Warehouse Job"
     }
+}
+
+-- NPC прораб
+Config.NPC = {
+    model = 's_m_m_dockwork_01',
+    coords = vector3(2457.08, 1578.90, 33.20),
+    heading = 180.0
 }
 
 -- ====================================================================================
@@ -55,17 +62,21 @@ Config.Warehouses = {
     -- Тестовая локация (Legion Square - центр города)
     {
         name = "Test Warehouse",
-        location = vector3(195.0, -933.0, 30.7),        -- Legion Square (начало работы)
-        loadPoint = vector3(200.0, -933.0, 30.7),       -- Точка взятия ящика (5м вправо)
-        unloadPoint = vector3(190.0, -933.0, 30.7),     -- Точка разгрузки (5м влево)
+        location = vector3(2456.58, 1578.43, 33.20),        -- Legion Square (начало работы)
+        loadPoint = vector3(2442.54, 1582.65, 32.72),       -- Точка взятия ящика (5м вправо)
+        unloadPoint = vector3(2478.65, 1597.28, 32.72),     -- Точка разгрузки (5м влево)
         heading = 90.0
     }
 }
 
 -- Пропы для ящиков
 Config.Props = {
-    normal = 'prop_cs_cardbox_01',      -- Обычный ящик
-    illegal = 'hei_prop_heist_box'      -- Подозрительный ящик (нелегал)
+    normal = 'prop_cs_cardbox_01',      -- Обычный ящик (в руках)
+    illegal = 'hei_prop_heist_box',     -- Подозрительный ящик (в руках)
+    
+    -- Пропы для точек (вместо маркеров)
+    loadPoint = 'prop_boxpile_07d',     -- Паллет с коробками (погрузка)
+    unloadPoint = 'prop_boxpile_07d'    -- Паллет с коробками (разгрузка)
 }
 
 -- Анимации

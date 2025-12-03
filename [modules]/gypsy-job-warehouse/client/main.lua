@@ -8,14 +8,17 @@ local boxProp = nil
 local isIllegal = false
 local boxesDelivered = 0
 
+local loadPointProp = nil
+local unloadPointProp = nil
+
 -- Очистка при перезагрузке ресурса
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     
     -- Удалить ящик если есть
-    if boxProp and DoesEntityExist(boxProp) then
-        DeleteObject(boxProp)
-    end
+    if boxProp and DoesEntityExist(boxProp) then DeleteObject(boxProp) end
+    if loadPointProp and DoesEntityExist(loadPointProp) then DeleteObject(loadPointProp) end
+    if unloadPointProp and DoesEntityExist(unloadPointProp) then DeleteObject(unloadPointProp) end
     
     -- Очистить анимацию
     local ped = PlayerPedId()
@@ -43,38 +46,66 @@ CreateThread(function()
     print('^2[Warehouse] Blip created successfully^0')
 end)
 
--- Маркер начала работы
+-- NPC и взаимодействие
+local npcEntity = nil
+
 CreateThread(function()
-    while true do
-        Wait(0)
+    if not Config.NPC then return end
+
+    local model = GetHashKey(Config.NPC.model)
+    RequestModel(model)
+    while not HasModelLoaded(model) do 
+        Wait(10) 
+    end
+    
+    npcEntity = CreatePed(4, model, Config.NPC.coords.x, Config.NPC.coords.y, Config.NPC.coords.z - 1.0, Config.NPC.heading, false, true)
+    
+    if DoesEntityExist(npcEntity) then
+        SetEntityInvincible(npcEntity, true)
+        FreezeEntityPosition(npcEntity, true)
+        SetBlockingOfNonTemporaryEvents(npcEntity, true)
+        SetPedDiesWhenInjured(npcEntity, false)
+        SetPedCanPlayAmbientAnims(npcEntity, false)
+        SetPedCanRagdollFromPlayerImpact(npcEntity, false)
+        SetEntityCanBeDamaged(npcEntity, false)
+        SetPedFleeAttributes(npcEntity, 0, 0)
+        SetPedCombatAttributes(npcEntity, 17, 1)
+        SetPedAlertness(npcEntity, 0)
         
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        local distance = #(coords - Config.Warehouse.coords)
-        
-        if distance < 10.0 then
-            DrawMarker(1, Config.Warehouse.coords.x, Config.Warehouse.coords.y, Config.Warehouse.coords.z - 1.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.0,
-                255, 200, 0, 100, false, true, 2, false, nil, nil, false)
-            
-            if distance < 2.0 and not isWorking then
-                SetTextComponentFormat("STRING")
-                AddTextComponentString("~INPUT_CONTEXT~ Начать смену")
-                DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                
-                if IsControlJustReleased(0, 38) then
-                    TriggerServerEvent('warehouse:server:startShift')
-                end
-            end
-        else
-            Wait(500)
-        end
+        exports['gypsy-interact']:AddTargetModel(model, {
+            {
+                label = "Начать смену",
+                icon = "fas fa-box",
+                event = "warehouse:client:interactStart"
+            },
+            {
+                label = "Забрать деньги",
+                icon = "fas fa-money-bill-wave",
+                serverEvent = "warehouse:server:finishShift"
+            }
+        })
     end
 end)
 
--- ====================================================================================
---                              WORK LOGIC
--- ====================================================================================
+RegisterNetEvent('warehouse:client:interactStart')
+AddEventHandler('warehouse:client:interactStart', function()
+    if not isWorking then
+        TriggerServerEvent('warehouse:server:startShift')
+    else
+        exports['gypsy-notifications']:Notify('Вы уже работаете!', 'error')
+    end
+end)
+function SpawnPointProp(model, coords, heading)
+    local hash = GetHashKey(model)
+    RequestModel(hash)
+    while not HasModelLoaded(hash) do Wait(10) end
+    
+    local prop = CreateObject(hash, coords.x, coords.y, coords.z - 1.0, false, false, false)
+    SetEntityHeading(prop, heading or 0.0)
+    PlaceObjectOnGroundProperly(prop)
+    FreezeEntityPosition(prop, true)
+    return prop
+end
 
 RegisterNetEvent('warehouse:client:startShift')
 AddEventHandler('warehouse:client:startShift', function(illegal)
@@ -119,32 +150,29 @@ end
 function ShowLoadPoint()
     if not isWorking then return end
     
+    -- Спавним проп если его нет
+    if not loadPointProp or not DoesEntityExist(loadPointProp) then
+        loadPointProp = SpawnPointProp(Config.Props.loadPoint, currentWarehouse.loadPoint, currentWarehouse.heading)
+    end
+    
     CreateThread(function()
         while isWorking and not carryingBox do
             Wait(0)
+            if not isWorking or not currentWarehouse then break end
             
             local ped = PlayerPedId()
             local coords = GetEntityCoords(ped)
             local distance = #(coords - currentWarehouse.loadPoint)
             
-            if distance < 20.0 then
-                -- Маркер точки погрузки
-                DrawMarker(1, currentWarehouse.loadPoint.x, currentWarehouse.loadPoint.y, currentWarehouse.loadPoint.z - 1.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-                    0, 255, 0, 150, false, true, 2, false, nil, nil, false)
+            if distance < 3.0 then
+                SetTextComponentFormat("STRING")
+                AddTextComponentString("~INPUT_CONTEXT~ Взять ящик")
+                DisplayHelpTextFromStringLabel(0, 0, 1, -1)
                 
-                if distance < 2.0 then
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Взять ящик")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        PickupBox()
-                        break
-                    end
+                if IsControlJustReleased(0, 38) then
+                    PickupBox()
+                    break
                 end
-            else
-                Wait(500)
             end
         end
     end)
@@ -188,32 +216,33 @@ end
 function ShowUnloadPoint()
     if not isWorking then return end
     
+    -- Спавним проп если его нет
+    if not unloadPointProp or not DoesEntityExist(unloadPointProp) then
+        unloadPointProp = SpawnPointProp(Config.Props.unloadPoint, currentWarehouse.unloadPoint, currentWarehouse.heading)
+    end
+    
     CreateThread(function()
         while isWorking and carryingBox do
             Wait(0)
+            if not isWorking or not currentWarehouse then break end
+            
+            -- Запрещаем бег и прыжки
+            DisableControlAction(0, 21, true) -- Sprint
+            DisableControlAction(0, 22, true) -- Jump
             
             local ped = PlayerPedId()
             local coords = GetEntityCoords(ped)
             local distance = #(coords - currentWarehouse.unloadPoint)
             
-            if distance < 20.0 then
-                -- Маркер точки разгрузки
-                DrawMarker(1, currentWarehouse.unloadPoint.x, currentWarehouse.unloadPoint.y, currentWarehouse.unloadPoint.z - 1.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-                    255, 0, 0, 150, false, true, 2, false, nil, nil, false)
+            if distance < 3.0 then
+                SetTextComponentFormat("STRING")
+                AddTextComponentString("~INPUT_CONTEXT~ Разгрузить ящик")
+                DisplayHelpTextFromStringLabel(0, 0, 1, -1)
                 
-                if distance < 2.0 then
-                    SetTextComponentFormat("STRING")
-                    AddTextComponentString("~INPUT_CONTEXT~ Разгрузить ящик")
-                    DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-                    
-                    if IsControlJustReleased(0, 38) then
-                        UnloadBox()
-                        break
-                    end
+                if IsControlJustReleased(0, 38) then
+                    UnloadBox()
+                    break
                 end
-            else
-                Wait(500)
             end
         end
     end)
@@ -248,10 +277,13 @@ end)
 RegisterNetEvent('warehouse:client:endShift')
 AddEventHandler('warehouse:client:endShift', function()
     -- Очистка
-    if boxProp and DoesEntityExist(boxProp) then
-        DeleteObject(boxProp)
-        boxProp = nil
-    end
+    if boxProp and DoesEntityExist(boxProp) then DeleteObject(boxProp) end
+    if loadPointProp and DoesEntityExist(loadPointProp) then DeleteObject(loadPointProp) end
+    if unloadPointProp and DoesEntityExist(unloadPointProp) then DeleteObject(unloadPointProp) end
+    
+    boxProp = nil
+    loadPointProp = nil
+    unloadPointProp = nil
     
     local ped = PlayerPedId()
     ClearPedTasks(ped)

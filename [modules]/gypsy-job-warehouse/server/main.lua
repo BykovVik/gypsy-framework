@@ -88,7 +88,8 @@ AddEventHandler('warehouse:server:startShift', function()
         boxes = 0,
         isIllegal = isIllegal,
         startTime = os.time(),
-        cooldown = nil
+        cooldown = nil,
+        accumulatedMoney = 0
     }
     
     local shiftType = isIllegal and "нелегальная" or "обычная"
@@ -113,35 +114,54 @@ AddEventHandler('warehouse:server:boxDelivered', function()
     
     ActiveWorkers[src].boxes = ActiveWorkers[src].boxes + 1
     
-    -- Оплата за ящик
+    -- Накопление оплаты
     local payment = ActiveWorkers[src].isIllegal and Config.Payment.IllegalPayment or Config.Payment.NormalPayment
-    Player.Functions.AddMoney('cash', payment, 'warehouse-box')
+    ActiveWorkers[src].accumulatedMoney = ActiveWorkers[src].accumulatedMoney + payment
     
     TriggerClientEvent('gypsy-notifications:client:notify', src, {
-        message = string.format('Ящик %d/%d: +$%d', ActiveWorkers[src].boxes, Config.Job.BoxesPerShift, payment),
+        message = string.format('Ящик %d/%d: +$%d (Всего: $%d)', ActiveWorkers[src].boxes, Config.Job.BoxesPerShift, payment, ActiveWorkers[src].accumulatedMoney),
         type = 'success'
     })
     
-    -- Проверка завершения смены
+    -- Проверка лимита (просто уведомляем)
     if ActiveWorkers[src].boxes >= Config.Job.BoxesPerShift then
-        -- Установить откат
-        ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
-        ActiveWorkers[src].working = false
-        
-        TriggerClientEvent('warehouse:client:endShift', src)
-        
-        local totalEarned = ActiveWorkers[src].boxes * payment
         TriggerClientEvent('gypsy-notifications:client:notify', src, {
-            message = string.format('Смена завершена! Заработано: $%d', totalEarned),
-            type = 'success',
+            message = 'План выполнен! Вернитесь к прорабу за расчетом.',
+            type = 'info',
             duration = 5000
         })
-        
-        print(string.format('^2[Warehouse] %s completed shift: $%d^0', GetPlayerName(src), totalEarned))
-    else
-        -- Следующий ящик
-        TriggerClientEvent('warehouse:client:nextBox', src)
     end
+    
+    -- Следующий ящик
+    TriggerClientEvent('warehouse:client:nextBox', src)
+end)
+
+RegisterNetEvent('warehouse:server:finishShift')
+AddEventHandler('warehouse:server:finishShift', function()
+    local src = source
+    if not ActiveWorkers[src] then return end
+    
+    local payout = ActiveWorkers[src].accumulatedMoney
+    local Player = exports['gypsy-core']:GetPlayer(src)
+    
+    if Player and payout > 0 then
+        Player.Functions.AddMoney('cash', payout, 'warehouse-salary')
+    end
+    
+    -- Установить откат и очистить статус
+    ActiveWorkers[src].cooldown = os.time() + (Config.Job.CooldownMinutes * 60)
+    ActiveWorkers[src].working = false
+    ActiveWorkers[src].boxes = 0
+    ActiveWorkers[src].accumulatedMoney = 0
+    
+    TriggerClientEvent('warehouse:client:endShift', src)
+    
+    TriggerClientEvent('gypsy-notifications:client:notify', src, {
+        message = string.format('Смена закончена. Выплачено: $%d', payout),
+        type = 'success'
+    })
+    
+    print(string.format('^2[Warehouse] %s finished shift. Payout: $%d^0', GetPlayerName(src), payout))
 end)
 
 AddEventHandler('playerDropped', function()
