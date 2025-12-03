@@ -6,9 +6,23 @@ local Gypsy = exports['gypsy-core']:GetCoreObject()
 -- 2. Общий ACE на команды (command)
 -- 3. Выполнение из консоли (source == 0)
 local function IsAdmin(source)
+    if source == 0 then return true end -- Console always admin
+    
+    -- 1. Check Config.SuperAdmins (Hardcoded fallback)
+    if Config.SuperAdmins then
+        local identifiers = GetPlayerIdentifiers(source)
+        for _, id in ipairs(identifiers) do
+            for _, adminId in ipairs(Config.SuperAdmins) do
+                if string.find(id, adminId) then
+                    return true
+                end
+            end
+        end
+    end
+
+    -- 2. Check ACE permissions
     return IsPlayerAceAllowed(source, 'gypsy.admin') or 
-           IsPlayerAceAllowed(source, 'command') or
-           source == 0  -- Консоль всегда имеет права
+           IsPlayerAceAllowed(source, 'command')
 end
 
 RegisterCommand('revive', function(source, args)
@@ -71,11 +85,27 @@ end)
 
 RegisterCommand('tp', function(source, args)
     if IsAdmin(source) then
-        local location = args[1]
-        if location and Config.Locations[location] then
-            TriggerClientEvent('gypsy-admin:client:teleport', source, Config.Locations[location])
+        local arg1 = args[1]
+        
+        -- Если первый аргумент число, значит это координаты
+        if tonumber(arg1) then
+            local x = tonumber(args[1])
+            local y = tonumber(args[2])
+            local z = tonumber(args[3])
+            
+            if x and y and z then
+                TriggerClientEvent('gypsy-admin:client:teleport', source, vector3(x, y, z))
+            else
+                TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Usage: /tp [x] [y] [z]' } })
+            end
         else
-            TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Location not found! Available: sandy, paleto, city, hospital, police, prison, casino, airport' } })
+            -- Иначе ищем локацию по имени
+            local location = arg1
+            if location and Config.Locations[location] then
+                TriggerClientEvent('gypsy-admin:client:teleport', source, Config.Locations[location])
+            else
+                TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Location not found! Available: sandy, paleto, city, hospital, police, prison, casino, airport OR use /tp [x] [y] [z]' } })
+            end
         end
     end
 end)

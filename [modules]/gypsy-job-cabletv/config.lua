@@ -71,7 +71,7 @@ Config.Payment = {
 Config.InstallPoints = {
     -- Downtown (улицы, парковки)
     {coords = vector3(129.0, -1298.0, 29.2), label = "Strawberry Ave"},
-    {coords = vector3(-58.0, -1098.0, 26.4), label = "Integrity Way"},
+    {coords = vector3(-49.20, -1069.44, 27.47), label = "Integrity Way"}, --исправлено
     {coords = vector3(262.37, -770.88, 30.74), label = "Legion Square"}, --исправлено
     {coords = vector3(177.57, -1072.02, 77.54), label = "Pillbox Parking"}, --исправлено
     
@@ -97,12 +97,12 @@ Config.InstallPoints = {
     
     -- Rockford Hills
     {coords = vector3(-1289.0, -1115.0, 7.0), label = "Rockford Dr"},
-    {coords = vector3(-801.0, -1185.0, 10.3), label = "Portola Dr"},
+    {coords = vector3(-884.23, -1141.73, 5.78), label = "Portola Dr"}, --исправлено
     {coords = vector3(-1308.61, -378.39, 43.31), label = "Rockford Plaza"},  --исправлено
     
     -- Sandy Shores
     {coords = vector3(1961.0, 3740.0, 32.3), label = "Sandy Shores Main"},
-    {coords = vector3(1698.0, 3597.0, 35.6), label = "Sandy Blvd"}
+    {coords = vector3(1696.25, 3611.24, 35.32), label = "Sandy Blvd"} --исправлено
 }
 
 -- Названия каналов для мини-игры (80-е стиль!)

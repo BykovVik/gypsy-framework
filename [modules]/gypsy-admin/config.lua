@@ -10,3 +10,9 @@ Config.Locations = {
     ['casino'] = vector3(935.0, 46.0, 81.0),
     ['airport'] = vector3(-1037.0, -2737.0, 20.0)
 }
+
+-- Список супер-админов (игнорируют ACE права)
+Config.SuperAdmins = {
+    'fivem:16710885',
+    'discord:716256021776957470'
+}
