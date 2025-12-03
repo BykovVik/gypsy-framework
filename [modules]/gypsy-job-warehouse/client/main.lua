@@ -10,6 +10,8 @@ local boxesDelivered = 0
 
 local loadPointProp = nil
 local unloadPointProp = nil
+local loadBlip = nil
+local unloadBlip = nil
 
 -- Очистка при перезагрузке ресурса
 AddEventHandler('onResourceStop', function(resourceName)
@@ -19,6 +21,9 @@ AddEventHandler('onResourceStop', function(resourceName)
     if boxProp and DoesEntityExist(boxProp) then DeleteObject(boxProp) end
     if loadPointProp and DoesEntityExist(loadPointProp) then DeleteObject(loadPointProp) end
     if unloadPointProp and DoesEntityExist(unloadPointProp) then DeleteObject(unloadPointProp) end
+    
+    if loadBlip then RemoveBlip(loadBlip) end
+    if unloadBlip then RemoveBlip(unloadBlip) end
     
     -- Очистить анимацию
     local ped = PlayerPedId()
@@ -116,39 +121,30 @@ AddEventHandler('warehouse:client:startShift', function(illegal)
     -- Выбираем случайный склад
     currentWarehouse = Config.Warehouses[math.random(#Config.Warehouses)]
     
-    -- Создаём блипы для точек погрузки и разгрузки
-    CreateWarehouseBlips()
-    
     -- Показываем первую точку погрузки
     ShowLoadPoint()
 end)
 
-function CreateWarehouseBlips()
-    if not currentWarehouse then return end
-    
-    -- Блип точки погрузки (зелёный)
-    local loadBlip = AddBlipForCoord(currentWarehouse.loadPoint)
-    SetBlipSprite(loadBlip, 478)
-    SetBlipColour(loadBlip, 2)  -- Green
-    SetBlipScale(loadBlip, 0.7)
-    SetBlipAsShortRange(loadBlip, true)
-    BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Погрузка")
-    EndTextCommandSetBlipName(loadBlip)
-    
-    -- Блип точки разгрузки (красный)
-    local unloadBlip = AddBlipForCoord(currentWarehouse.unloadPoint)
-    SetBlipSprite(unloadBlip, 478)
-    SetBlipColour(unloadBlip, 1)  -- Red
-    SetBlipScale(unloadBlip, 0.7)
-    SetBlipAsShortRange(unloadBlip, true)
-    BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Разгрузка")
-    EndTextCommandSetBlipName(unloadBlip)
-end
-
 function ShowLoadPoint()
     if not isWorking then return end
+    
+    -- Убираем блип разгрузки
+    if unloadBlip then 
+        RemoveBlip(unloadBlip) 
+        unloadBlip = nil
+    end
+    
+    -- Создаем блип погрузки
+    if not loadBlip then
+        loadBlip = AddBlipForCoord(currentWarehouse.loadPoint)
+        SetBlipSprite(loadBlip, 478)
+        SetBlipColour(loadBlip, 2)  -- Green
+        SetBlipScale(loadBlip, 0.7)
+        SetBlipAsShortRange(loadBlip, true)
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString("Погрузка")
+        EndTextCommandSetBlipName(loadBlip)
+    end
     
     -- Спавним проп если его нет
     if not loadPointProp or not DoesEntityExist(loadPointProp) then
@@ -216,6 +212,24 @@ end
 function ShowUnloadPoint()
     if not isWorking then return end
     
+    -- Убираем блип погрузки
+    if loadBlip then 
+        RemoveBlip(loadBlip) 
+        loadBlip = nil
+    end
+    
+    -- Создаем блип разгрузки
+    if not unloadBlip then
+        unloadBlip = AddBlipForCoord(currentWarehouse.unloadPoint)
+        SetBlipSprite(unloadBlip, 478)
+        SetBlipColour(unloadBlip, 1)  -- Red
+        SetBlipScale(unloadBlip, 0.7)
+        SetBlipAsShortRange(unloadBlip, true)
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString("Разгрузка")
+        EndTextCommandSetBlipName(unloadBlip)
+    end
+    
     -- Спавним проп если его нет
     if not unloadPointProp or not DoesEntityExist(unloadPointProp) then
         unloadPointProp = SpawnPointProp(Config.Props.unloadPoint, currentWarehouse.unloadPoint, currentWarehouse.heading)
@@ -280,6 +294,13 @@ AddEventHandler('warehouse:client:endShift', function()
     if boxProp and DoesEntityExist(boxProp) then DeleteObject(boxProp) end
     if loadPointProp and DoesEntityExist(loadPointProp) then DeleteObject(loadPointProp) end
     if unloadPointProp and DoesEntityExist(unloadPointProp) then DeleteObject(unloadPointProp) end
+    
+    if loadBlip then RemoveBlip(loadBlip) 
+        loadBlip = nil 
+    end
+    if unloadBlip then RemoveBlip(unloadBlip) 
+        unloadBlip = nil 
+    end
     
     boxProp = nil
     loadPointProp = nil
